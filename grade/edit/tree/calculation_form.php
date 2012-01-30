@@ -24,7 +24,13 @@ require_once $CFG->libdir.'/formslib.php';
 class edit_calculation_form extends moodleform {
     public $available;
     public $noidnumbers;
-
+	function edit_calculation_form($action=null, $customdata=null, $method='post', $target='', $attributes=null, $editable=true) {
+		global $CFG;
+		parent::__construct($action, $customdata, $method, $target, $attributes, $editable);
+		
+		
+	
+	}
     function definition() {
         global $COURSE;
 
@@ -50,7 +56,8 @@ class edit_calculation_form extends moodleform {
 /// visible elements
         $mform->addElement('header', 'general', get_string('gradeitem', 'grades'));
         $mform->addElement('static', 'itemname', get_string('itemname', 'grades'));
-        $mform->addElement('textarea', 'calculation', get_string('calculation', 'grades'), 'cols="60" rows="5"');
+//        $mform->addElement('textarea', 'calculation', get_string('calculation', 'grades'), 'cols="60" rows="5"');
+  		$mform->addElement('gradecalc', 'calculation', get_string('calculation', 'grades'), 'cols="60" rows="5"');
         $mform->addHelpButton('calculation', 'calculation', 'grades');
 
 /// hidden params

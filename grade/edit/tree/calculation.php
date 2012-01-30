@@ -18,6 +18,8 @@
 require_once '../../../config.php';
 require_once $CFG->dirroot.'/grade/lib.php';
 require_once $CFG->libdir.'/mathslib.php';
+//require_once $CFG->libdir.'/formslib.php';
+
 require_once 'calculation_form.php';
 
 $courseid  = required_param('courseid', PARAM_INT);
