@@ -130,7 +130,11 @@ class profile_field_base {
 
         $errors = array();
         /// Check for uniqueness of data if required
-        if ($this->is_unique()) {
+        if (
+            ( !$this->is_empty() and $this->is_required() )
+                &&
+                $this->is_unique()
+                ) {
             $value = (is_array($usernew->{$this->inputname}) and isset($usernew->{$this->inputname}['text'])) ? $usernew->{$this->inputname}['text'] : $usernew->{$this->inputname};
             $data = $DB->get_records_sql('
                     SELECT id, userid
