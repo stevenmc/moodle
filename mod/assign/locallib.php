@@ -2743,9 +2743,11 @@ class assign {
         $o .= $this->get_renderer()->render($header);
 
         // If userid is passed - we are only grading a single student.
-        $rownum = required_param('rownum', PARAM_INT);
+        $rownum = required_param('rownum', PARAM_INT);	
+        $selecteduserid = required_param('rownum', PARAM_INT);//think of this as "userid" to start from in a list
+        
         $useridlistid = optional_param('useridlistid', time(), PARAM_INT);
-        $userid = optional_param('userid', 0, PARAM_INT);
+        $userid = optional_param('userid', 0, PARAM_INT);	//this is a specific user to display (slightly different from above)
         $attemptnumber = optional_param('attemptnumber', -1, PARAM_INT);
 
         $cache = cache::make_from_params(cache_store::MODE_SESSION, 'mod_assign', 'useridlist');
@@ -2762,9 +2764,11 @@ class assign {
         if ($rownum < 0 || $rownum > count($useridlist)) {
             throw new coding_exception('Row is out of bounds for the current grading table: ' . $rownum);
         }
-
+		if (!in_array($selecteduserid, $useridlist) ) {
+			throw new moodle_exception('Selected user not in list of users filtered');
+		}
         $last = false;
-        $userid = $useridlist[$rownum];
+        //$userid = $useridlist[$rownum];
         if ($rownum == count($useridlist) - 1) {
             $last = true;
         }
