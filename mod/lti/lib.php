@@ -180,7 +180,7 @@ function lti_delete_instance($id) {
 }
 
 function lti_get_types() {
-    global $OUTPUT;
+    global $OUTPUT, $DB;
 
     $subtypes = array();
     foreach (get_plugin_list('ltisource') as $name => $dir) {
@@ -188,9 +188,12 @@ function lti_get_types() {
             $subtypes = array_merge($subtypes, $moretypes);
         }
     }
-    if (empty($subtypes)) {
+    $admintypes = $DB->get_records('lti_types');
+    
+    if (empty($subtypes) & empty($admintypes)) {
         return MOD_SUBTYPE_NO_CHILDREN;
     }
+
 
     $types = array();
 
@@ -212,6 +215,17 @@ function lti_get_types() {
     $type->help     = $help;
     $types[]        = $type;
 
+	foreach($admintypes as $t) {
+		$type = new stdClass();
+		$type->modclass = MOD_CLASS_ACTIVITY;
+		$type->type 	= 'lti&amp;type=ltixx'.urlencode($t->name);
+		//$type->type     = 'lti&type='. rawurlencode($t->name);
+    	$type->typestr  = $t->name;//get_string('generaltool', 'mod_lti');
+    	$type->help     = $help;
+    	$types[]        = $type;
+	}
+	
+	
     $types = array_merge($types, $subtypes);
 
     $type           = new stdClass();

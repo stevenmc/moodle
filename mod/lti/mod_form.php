@@ -57,7 +57,14 @@ class mod_lti_mod_form extends moodleform_mod {
         global $DB, $PAGE, $OUTPUT, $USER, $COURSE;
 
         if ($type = optional_param('type', false, PARAM_ALPHA)) {
-            component_callback("ltisource_$type", 'add_instance_hook');
+        	//die($type);
+        	if (strpos($type,'ltixx') != -1) {
+        		$typeinfo = explode('ltixx', $type);
+        		$preselectedtypeid = $typeinfo[1];
+        		//die($preselectedtypeid);
+        	} else { 
+            	component_callback("ltisource_$type", 'add_instance_hook');
+        	}
         }
 
         $this->typeid = 0;
@@ -96,8 +103,9 @@ class mod_lti_mod_form extends moodleform_mod {
         // Tool settings
         $tooltypes = $mform->addElement('select', 'typeid', get_string('external_tool_type', 'lti'), array());
         $mform->addHelpButton('typeid', 'external_tool_type', 'lti');
-
-        foreach (lti_get_types_for_add_instance() as $id => $type) {
+		$preselectedtype = false;
+		$types = lti_get_types_for_add_instance();
+        foreach ($types as $id => $type) {
             if ($type->course == $COURSE->id) {
                 $attributes = array( 'editable' => 1, 'courseTool' => 1, 'domain' => $type->tooldomain );
             } else if ($id != 0) {
@@ -107,6 +115,19 @@ class mod_lti_mod_form extends moodleform_mod {
             }
 
             $tooltypes->addOption($type->name, $id, $attributes);
+            if ($type->name == $preselectedtypeid) {
+            	$preselectedtype = $type;
+            	$preselectedtype->id = $id;
+            	break;	
+            }
+        }
+        
+		if ($preselectedtype !== false) { 
+			
+        	$mform->removeElement('typeid');
+        	$mform->addElement('hidden','typeid');
+        	$mform->setDefault('typeid',$preselectedtype->id);
+        	$mform->addElement('static','preselectedid',get_string('external_tool_type', 'lti'),$preselectedtype->name);
         }
 
         $mform->addElement('text', 'toolurl', get_string('launch_url', 'lti'), array('size'=>'64'));
