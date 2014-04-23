@@ -141,16 +141,25 @@ if ($hassiteconfig
         // Username is not included as an option because in some sites, it might
         // be a security problem to reveal usernames even to trusted staff.
         // Custom user profile fields are not currently supported.
-        $temp->add(new admin_setting_configmulticheckbox('showuseridentity',
-                new lang_string('showuseridentity', 'admin'),
-                new lang_string('showuseridentity_desc', 'admin'), array('email' => 1), array(
+        $fields = array(
                     'idnumber'    => new lang_string('idnumber'),
                     'email'       => new lang_string('email'),
                     'phone1'      => new lang_string('phone'),
                     'phone2'      => new lang_string('phone2'),
                     'department'  => new lang_string('department'),
-                    'institution' => new lang_string('institution'),
-                )));
+                    'institution' => new lang_string('institution')
+        		);
+        $profilefields = $DB->get_records('user_info_field', array(), 'sortorder ASC');
+        foreach($profilefields as $key=>$field) {
+        	$fields['upf_'.$field->id] = $field->name;
+        }
+        
+        $temp->add(new admin_setting_configmulticheckbox('showuseridentity',
+                new lang_string('showuseridentity', 'admin'),
+                new lang_string('showuseridentity_desc', 'admin'), array('email' => 1), 
+        		$fields
+                ));
+        //MDL-25242...
         $temp->add(new admin_setting_configtext('fullnamedisplay', new lang_string('fullnamedisplay', 'admin'), new lang_string('configfullnamedisplay', 'admin'), 'language', PARAM_TEXT, 50));
         $temp->add(new admin_setting_configtext('maxusersperpage', new lang_string('maxusersperpage','admin'), new lang_string('configmaxusersperpage','admin'), 100, PARAM_INT));
         $temp->add(new admin_setting_configcheckbox('enablegravatar', new lang_string('enablegravatar', 'admin'), new lang_string('enablegravatar_help', 'admin'), 0));

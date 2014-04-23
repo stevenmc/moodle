@@ -128,9 +128,20 @@ class assign_grading_table extends table_sql implements renderable {
         $params['assignmentid4'] = (int)$this->assignment->get_instance()->id;
         $params['assignmentid5'] = (int)$this->assignment->get_instance()->id;
 
-        $extrauserfields = get_extra_user_fields($this->assignment->get_context());
-
+        $extrauserfields = get_extra_user_fields($this->assignment->get_context(),array(), false);
+        $upfields = array();
+        $fieldsupf= '';
+		foreach($extrauserfields as $index=>$fieldname) {
+			if (substr($fieldname, 0, 4) == 'upf_') {
+				$fid = substr($fieldname,4);
+				$upfields[] = $fid;
+				unset($extrauserfields[$index]);
+				$fieldsupf .= 'upf'.$fid.'.data AS '.$fieldname .', ';
+			}
+		}
         $fields = user_picture::fields('u', $extrauserfields) . ', ';
+        //$fields .= user_picture::fields('uid', $upfields). ', ';
+        $fields .= $fieldsupf;
         $fields .= 'u.id as userid, ';
         $fields .= 's.status as status, ';
         $fields .= 's.id as submissionid, ';
@@ -170,9 +181,20 @@ class assign_grading_table extends table_sql implements renderable {
         $userindex = 0;
 
         list($userwhere, $userparams) = $DB->get_in_or_equal($users, SQL_PARAMS_NAMED, 'user');
+
+        $upfparams = array();
+        foreach($upfields as $f) {
+        	$from .= "\n                         LEFT JOIN {user_info_data} upf{$f} ON upf{$f}.fieldid = :upf_{$f} AND upf{$f}.userid = u.id";
+        	$upfparams['upf_'.$f] = $f;
+        	//$userparams[]
+        }
+        $from .="\n";
+        
         $where = 'u.id ' . $userwhere;
         $params = array_merge($params, $userparams);
-
+        $params = array_merge($params, $upfparams);
+        
+        
         // The filters do not make sense when there are no submissions, so do not apply them.
         if ($this->assignment->is_any_submission_plugin_enabled()) {
             if ($filter == ASSIGN_FILTER_SUBMITTED) {
@@ -230,7 +252,9 @@ class assign_grading_table extends table_sql implements renderable {
                 }
             }
         }
-
+/* var_dump($fields);
+print_object($from);
+var_dump($where); */
         $this->set_sql($fields, $from, $where, $params);
 
         if ($downloadfilename) {
@@ -265,6 +289,11 @@ class assign_grading_table extends table_sql implements renderable {
             foreach ($extrauserfields as $extrafield) {
                 $columns[] = $extrafield;
                 $headers[] = get_user_field_name($extrafield);
+            }
+            foreach($upfields as $f) {
+            	$columns[] = 'upf_'.$f;
+            	$updef = $DB->get_record('user_info_field', array('id'=>$f));
+            	$headers[] = $updef->name;
             }
         } else {
             // Record ID.
@@ -1202,6 +1231,10 @@ class assign_grading_table extends table_sql implements renderable {
      * @return mixed string or NULL
      */
     public function other_cols($colname, $row) {
+    	if (substr($colname,0,4) =='upf_') {
+    		//this is a user profile field;
+    		return $row->$colname;
+    	}
         // For extra user fields the result is already in $row.
         if (empty($this->plugincache[$colname])) {
             return $row->$colname;

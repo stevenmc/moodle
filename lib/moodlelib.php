@@ -3757,7 +3757,7 @@ function order_in_string($values, $stringformat) {
  * @return array Array of field names from user table, not including anything
  *   listed in $already
  */
-function get_extra_user_fields($context, $already = array()) {
+function get_extra_user_fields($context, $already = array(), $excludeprofile = true) {
     global $CFG;
 
     // Only users with permission get the extra fields.
@@ -3778,7 +3778,11 @@ function get_extra_user_fields($context, $already = array()) {
             unset($extra[$key]);
             $renumber = true;
         }
-    }
+        if ($excludeprofile && substr($field,0,4) =='upf_') {
+        	unset($extra[$key]);
+        	$renumber = true;
+        }
+    };
     if ($renumber) {
         // For consistency, if entries are removed from array, renumber it
         // so they are numbered as you would expect.
