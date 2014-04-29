@@ -473,7 +473,7 @@ function get_users_listing($sort='lastaccess', $dir='ASC', $page=0, $recordsperp
                            $search='', $firstinitial='', $lastinitial='', $extraselect='',
                            array $extraparams=null, $extracontext = null) {
     global $DB, $CFG;
-
+$start = microtime(true);
     $fullname  = $DB->sql_fullname();
 
     $select = "deleted <> 1 AND u.id <> :guestid";
@@ -522,16 +522,19 @@ function get_users_listing($sort='lastaccess', $dir='ASC', $page=0, $recordsperp
     $extraprofilefields = get_extra_user_profile_fields($extracontext);
     
     list($extraprofileselect, $extraprofilejoin, $extraprofileparams) = get_extra_user_profile_fields_sql($extraprofilefields);
-    $extrafields .= ', '.$extraprofileselect;
-    $params = array_merge($params, $extraprofileparams);
-    
+    if (!empty($extraprofileselect)) {
+        $extrafields .= ', '.$extraprofileselect;
+        $params = array_merge($params, $extraprofileparams);
+    }
     // warning: will return UNCONFIRMED USERS
-    return $DB->get_records_sql("SELECT u.id, username, email, city, country, lastaccess, confirmed, mnethostid, suspended $extrafields
+    $results = $DB->get_records_sql("SELECT u.id, username, email, city, country, lastaccess, confirmed, mnethostid, suspended $extrafields
                                    FROM {user} u
                                   $extraprofilejoin 
                                   WHERE $select
                                   $sort", $params, $page, $recordsperpage);
-
+    $end= microtime(true);
+    debugging('get_users_listing() duration: '. ($end -$start));
+    return $results;
 }
 
 
