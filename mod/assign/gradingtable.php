@@ -129,7 +129,11 @@ class assign_grading_table extends table_sql implements renderable {
         $params['assignmentid5'] = (int)$this->assignment->get_instance()->id;
 
         $extrauserfields = get_extra_user_fields($this->assignment->get_context(),array(), false);
-        $upfields = array();
+        $extraprofilefieldlist = get_extra_user_profile_fields($this->assignment->get_context());
+        
+        list($extraprofilefields, $extraprofilefrom, $extraprofileparams) = get_extra_user_profile_fields_sql($extraprofilefieldlist);
+        //die();
+        /*$upfields = array();
         $fieldsupf= '';
 		foreach($extrauserfields as $index=>$fieldname) {
 			if (substr($fieldname, 0, 4) == 'upf_') {
@@ -139,9 +143,12 @@ class assign_grading_table extends table_sql implements renderable {
 				$fieldsupf .= 'upf'.$fid.'.data AS '.$fieldname .', ';
 			}
 		}
+		*/
+		//$fields = get_extra_user_fields_sql($this->assignment->get_context);
         $fields = user_picture::fields('u', $extrauserfields) . ', ';
+        $fields .= $extraprofilefields .', ';
         //$fields .= user_picture::fields('uid', $upfields). ', ';
-        $fields .= $fieldsupf;
+        //$fields .= $fieldsupf;
         $fields .= 'u.id as userid, ';
         $fields .= 's.status as status, ';
         $fields .= 's.id as submissionid, ';
@@ -182,17 +189,18 @@ class assign_grading_table extends table_sql implements renderable {
 
         list($userwhere, $userparams) = $DB->get_in_or_equal($users, SQL_PARAMS_NAMED, 'user');
 
-        $upfparams = array();
+        /* $upfparams = array();
         foreach($upfields as $f) {
         	$from .= "\n                         LEFT JOIN {user_info_data} upf{$f} ON upf{$f}.fieldid = :upf_{$f} AND upf{$f}.userid = u.id";
         	$upfparams['upf_'.$f] = $f;
         	//$userparams[]
-        }
+        } */
+        $from .= $extraprofilefrom;
         $from .="\n";
         
         $where = 'u.id ' . $userwhere;
         $params = array_merge($params, $userparams);
-        $params = array_merge($params, $upfparams);
+        $params = array_merge($params, $extraprofileparams);
         
         
         // The filters do not make sense when there are no submissions, so do not apply them.
@@ -290,9 +298,10 @@ var_dump($where); */
                 $columns[] = $extrafield;
                 $headers[] = get_user_field_name($extrafield);
             }
-            foreach($upfields as $f) {
-            	$columns[] = 'upf_'.$f;
-            	$updef = $DB->get_record('user_info_field', array('id'=>$f));
+            foreach($extraprofilefieldlist as $f) {
+            	$columns[] = $f;///'upf_'.$f;
+            	$fid =substr($f,4);
+            	$updef = $DB->get_record('user_info_field', array('id'=>$fid));
             	$headers[] = $updef->name;
             }
         } else {
