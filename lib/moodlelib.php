@@ -3778,7 +3778,7 @@ function get_extra_user_fields($context, $already = array(), $excludeprofile = t
             unset($extra[$key]);
             $renumber = true;
         }
-        if ($excludeprofile && substr($field,0,4) =='upf_') {
+        if (substr($field,0,4) =='upf_') {
         	unset($extra[$key]);
         	$renumber = true;
         }
@@ -3819,11 +3819,78 @@ function get_extra_user_fields_sql($context, $alias='', $prefix='', $already = a
 }
 
 /**
+Gets a list of user profile fields that are being pulled out 
+ */
+function get_extra_user_profile_fields($context) {
+    global $CFG;
+    
+    // Only users with permission get the extra fields.
+    if (!has_capability('moodle/site:viewuseridentity', $context)) {
+        return array();
+    }
+    
+    // Split showuseridentity on comma.
+    if (empty($CFG->showuseridentity)) {
+        // Explode gives wrong result with empty string.
+        $extra = array();
+    } else {
+        $extra =  explode(',', $CFG->showuseridentity);
+    }
+    $renumber = true;
+    foreach ($extra as $key => $field) {
+/*         if (in_array($field, $already)) {
+            unset($extra[$key]);
+            $renumber = true;
+        }
+ */
+        if (substr($field,0,4) !='upf_') {
+            unset($extra[$key]);
+        }
+    };
+    if ($renumber) {
+        // For consistency, if entries are removed from array, renumber it
+        // so they are numbered as you would expect.
+        $extra = array_merge($extra);
+    }
+    return $extra;
+}
+/*
+function get_extra_user_profile_fields($context){
+    if (substr($field, 0, 4) == 'upf_') {
+        $fid = substr($field,4);
+        $upfields[] = $fid;
+        unset($extrauserfields[$index]);
+        //$fieldsupf .= 'upf'.$fid.'.data AS '.$field .', ';
+        $result .= ', upf' . $fid .'.data AS ' . $field;
+    } else  {
+}
+*/
+
+function get_extra_user_profile_fields_sql($fields) {
+    $outfields = array();
+    $outfrom = '';
+    $outparams = array();
+    foreach($fields as $field) {
+        $fid = substr($field,4);
+        $outfields[] = 'upf_' . $fid .'.data AS ' . $field;
+        $outfrom .= "\n                         LEFT JOIN {user_info_data} upf_{$fid} ON upf_{$fid}.fieldid = :upf_{$fid} AND upf_{$fid}.userid = u.id";
+        $outparams['upf_'.$fid] = $fid;
+    }
+    return array(implode(', ',$outfields), $outfrom, $outparams);
+}
+
+/**
  * Returns the display name of a field in the user table. Works for most fields that are commonly displayed to users.
  * @param string $field Field name, e.g. 'phone1'
  * @return string Text description taken from language file, e.g. 'Phone number'
  */
 function get_user_field_name($field) {
+    global $DB;
+    if (substr($field, 0,4) =='upf_') {
+        $fid = substr($field, 4);
+        $updef = $DB->get_record('user_info_field', array('id'=>$fid));
+        return $updef->name;
+    }
     // Some fields have language strings which are not the same as field name.
     switch ($field) {
         case 'phone1' : {

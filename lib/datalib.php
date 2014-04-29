@@ -476,7 +476,7 @@ function get_users_listing($sort='lastaccess', $dir='ASC', $page=0, $recordsperp
 
     $fullname  = $DB->sql_fullname();
 
-    $select = "deleted <> 1 AND id <> :guestid";
+    $select = "deleted <> 1 AND u.id <> :guestid";
     $params = array('guestid' => $CFG->siteguest);
 
     if (!empty($search)) {
@@ -518,9 +518,17 @@ function get_users_listing($sort='lastaccess', $dir='ASC', $page=0, $recordsperp
     $namefields = get_all_user_name_fields(true);
     $extrafields = "$extrafields, $namefields";
 
+    //handle user profile fields in the user identiy
+    $extraprofilefields = get_extra_user_profile_fields($extracontext);
+    
+    list($extraprofileselect, $extraprofilejoin, $extraprofileparams) = get_extra_user_profile_fields_sql($extraprofilefields);
+    $extrafields .= ', '.$extraprofileselect;
+    $params = array_merge($params, $extraprofileparams);
+    
     // warning: will return UNCONFIRMED USERS
-    return $DB->get_records_sql("SELECT id, username, email, city, country, lastaccess, confirmed, mnethostid, suspended $extrafields
-                                   FROM {user}
+    return $DB->get_records_sql("SELECT u.id, username, email, city, country, lastaccess, confirmed, mnethostid, suspended $extrafields
+                                   FROM {user} u
+                                  $extraprofilejoin 
                                   WHERE $select
                                   $sort", $params, $page, $recordsperpage);
 

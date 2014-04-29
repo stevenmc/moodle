@@ -9,7 +9,7 @@
     $delete       = optional_param('delete', 0, PARAM_INT);
     $confirm      = optional_param('confirm', '', PARAM_ALPHANUM);   //md5 confirmation hash
     $confirmuser  = optional_param('confirmuser', 0, PARAM_INT);
-    $sort         = optional_param('sort', 'name', PARAM_ALPHANUM);
+    $sort         = optional_param('sort', 'name', PARAM_ALPHANUMEXT);
     $dir          = optional_param('dir', 'ASC', PARAM_ALPHA);
     $page         = optional_param('page', 0, PARAM_INT);
     $perpage      = optional_param('perpage', 30, PARAM_INT);        // how many per page
@@ -160,7 +160,8 @@
     $extracolumns = get_extra_user_fields($context);
     $columns = array_merge(array('firstname', 'lastname'), $extracolumns,
             array('city', 'country', 'lastaccess'));
-
+    $extraprofilecolumns = get_extra_user_profile_fields($context);
+    $columns = array_merge($columns, $extraprofilecolumns);
     foreach ($columns as $column) {
         $string[$column] = get_user_field_name($column);
         if ($sort != $column) {
@@ -181,6 +182,7 @@
 
         }
         $$column = "<a href=\"user.php?sort=$column&amp;dir=$columndir\">".$string[$column]."</a>$columnicon";
+
     }
 
     $override = new stdClass();
@@ -259,6 +261,10 @@
         $table->colclasses[] = 'leftalign';
         foreach ($extracolumns as $field) {
             $table->head[] = ${$field};
+            $table->colclasses[] = 'leftalign';
+        }
+        foreach($extraprofilecolumns as $profilefield) {
+            $table->head[] = $$profilefield;//get_user_field_name($profilefield);
             $table->colclasses[] = 'leftalign';
         }
         $table->head[] = $city;
@@ -350,6 +356,9 @@
             $row[] = "<a href=\"../user/view.php?id=$user->id&amp;course=$site->id\">$fullname</a>";
             foreach ($extracolumns as $field) {
                 $row[] = $user->{$field};
+            }
+            foreach ($extraprofilecolumns as $pfield) {
+                $row[] = $user->{$pfield};
             }
             $row[] = $user->city;
             $row[] = $user->country;
