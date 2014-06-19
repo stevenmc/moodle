@@ -276,10 +276,10 @@ class assign_grading_table extends table_sql implements renderable {
             $headers[] = get_string('recordid', 'assign');
         }
 
-    	if ($this->hasviewblind) {
+        if ($this->hasviewblind) {
                 $columns[] = 'recordid';
                 $headers[] = get_string('recordid', 'assign');
-    	}
+        }
 
         // Submission status.
         if ($assignment->is_any_submission_plugin_enabled()) {

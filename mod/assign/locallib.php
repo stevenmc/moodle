@@ -3242,16 +3242,16 @@ class assign {
      * @return string The name.
      */
     public function fullname($user) {
-        $hasviewblind = has_capability('mod/assign:viewblinddetails', $this->get_context());
-        if ($hasviewblind) {
-            return fullname($user);
-        } else {
-            if ($this->is_blind_marking()) {
+        if ($this->is_blind_marking()) {
+            $hasviewblind = has_capability('mod/assign:viewblinddetails', $this->get_context());
+            if ($hasviewblind) {
+                return fullname($user);
+            } else {
                 $uniqueid = $this->get_uniqueid_for_user($user->id);
                 return get_string('participant', 'assign') . ' ' . $uniqueid;
-            } else {
-                return fullname($user);
             }
+        } else {
+            return fullname($user);
         }
     }
 
