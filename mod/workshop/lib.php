@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -1699,9 +1698,9 @@ function workshop_calendar_update(stdClass $workshop, $cmid) {
 
 /** Started MDL-31936 Reset work*/
 function workshop_reset_course_form_definition(&$mform) {
-    $mform->addElement('header', 'workshopheader', get_string('modulenameplural','workshop'));
-    $mform->addElement('checkbox', 'reset_workshop_all', get_string('resetworkshopall','workshop'));
-    //@todo selecive reset
+    $mform->addElement('header', 'workshopheader', get_string('modulenameplural', 'workshop'));
+    $mform->addElement('checkbox', 'reset_workshop_all', get_string('resetworkshopall', 'workshop'));
+    // ... @todo selective reset.
 
 }
 
@@ -1713,26 +1712,26 @@ function workshop_reset_course_form_defaults($course) {
 
 function workshop_reset_userdata($data) {
     global $CFG, $DB;
-    
-    //only if we have workshop modules
-    if (!$workshops = $DB->get_records('workshop', array('course' => $data->courseid))){
+
+    // Only if we have workshop modules.
+    if (!$workshops = $DB->get_records('workshop', array('course' => $data->courseid))) {
         return false;
     }
-    
+
     $componentstr = get_string('modulenameplural', 'workshop');
-    
+
     $status = array();
-    
-    foreach($workshops as $workshop) {
-        //the tricky bit work out what to delete
-        //we're going to go nuclear, no options just reset it so that it's like the user just created it.
-        /*
+
+    foreach ($workshops as $workshop) {
+        /* The tricky bit work out what to delete
+         * we're going to go nuclear, no options just reset it so that it's like the user just created it.
+         *
          * We have to deal with in order
          * workshop_aggregations
          * workshop_grades
          * workshop_assessments
          * workshop_submissions
-         * 
+         *
          * These are all "old" tables used in legacy workshops
          * workshop_old
          * workshop_elements_old
@@ -1742,29 +1741,28 @@ function workshop_reset_userdata($data) {
          * workshop_grades_old
          * workshop_stockcomments_old
          * workshop_comments_old
-         * 
-         * Have to also reset the "phase" option to 0 
-         */ 
-        //$aggregations = $DB->get_records)
-        
+         *
+         * Have to also reset the "phase" option to 0
+         */
+
         $tx = $DB->start_delegated_transaction();
-        $del_aggregations = $DB->delete_records('workshop_aggregations', array('workshopid' => $workshop->id));
+        $delaggregations = $DB->delete_records('workshop_aggregations', array('workshopid' => $workshop->id));
         $submissions = $DB->get_records('workshop_submissions', array('workshopid' => $workshop->id));
-        foreach($submissions  as $submission) {
+        foreach ($submissions as $submission) {
             $assessments = $DB->get_records('workshop_assessments', array('submissionid' => $submission->id));
-            foreach($assessments as $assessment) {
-                $del_grades = $DB->delete_records('workshop_grades', array('assessmentid' => $assessment->id));
+            foreach ($assessments as $assessment) {
+                $delgrades = $DB->delete_records('workshop_grades', array('assessmentid' => $assessment->id));
             }
-            $del_assessments = $DB->delete_records('workshop_assessments', array('submissionid' => $submission->id));
+            $delassessments = $DB->delete_records('workshop_assessments', array('submissionid' => $submission->id));
         }
-        $del_submissions = $DB->get_records('workshop_submissions', array('workshopid' => $workshop->id));
-        //end slow version
-        
+        $delsubmissions = $DB->get_records('workshop_submissions', array('workshopid' => $workshop->id));
+        // End slow version.
+
         $DB->set_field('workshop', 'phase', 0, array('id' => $workshop->id));
         $DB->commit_delegated_transaction($tx);
-        
+
     }
-    $status[] = array('component'=>$componentstr, 'item'=>get_string('resetworkshopall','workshop'), 'error'=>false);
+    $status[] = array('component' => $componentstr, 'item' => get_string('resetworkshopall', 'workshop'), 'error' => false);
     return $status;
 }
 
