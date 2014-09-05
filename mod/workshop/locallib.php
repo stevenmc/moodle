@@ -2633,7 +2633,10 @@ class workshop {
             $event = calendar_event::load($event);
             $event->delete();
         }
-        
+
+        // Set the phase.
+        $this->switch_phase(self::PHASE_SETUP);    // Use the API but we may not want to raise events about this....
+
         $status[] = array('component' => $componentstr, 'item' => get_string('resetworkshopall', 'workshop'), 'error' => false);
         return $status;
     }

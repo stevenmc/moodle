@@ -1728,7 +1728,7 @@ function workshop_reset_userdata($data) {
         $wx = new workshop($workshop, $cm, $course);
         $status = array_merge($status, $wx->reset_userdata($data));
     }
-    
+
     return $status;
 }
 
