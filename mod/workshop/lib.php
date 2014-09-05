@@ -1717,12 +1717,16 @@ function workshop_reset_userdata($data) {
     if (!$workshops = $DB->get_records('workshop', array('course' => $data->courseid))) {
         return false;
     }
-
+    require_once($CFG->dirroot . '/mod/workshop/locallib.php');
+    $course = $DB->get_record('course', array('id' => $data->courseid));
     $componentstr = get_string('modulenameplural', 'workshop');
 
     $status = array();
 
     foreach ($workshops as $workshop) {
+        $cm = get_coursemodule_from_instance("workshop", $workshop->id, $data->courseid);
+        $wx = new workshop($workshop, $cm, $course);
+        $result = $wx->reset_userdata($data);
         /* The tricky bit work out what to delete
          * we're going to go nuclear, no options just reset it so that it's like the user just created it.
         *
@@ -1744,7 +1748,7 @@ function workshop_reset_userdata($data) {
         *
         * Have to also reset the "phase" option to 0
         */
-
+        /*
         $tx = $DB->start_delegated_transaction();
         $delaggregations = $DB->delete_records('workshop_aggregations', array('workshopid' => $workshop->id));
         $submissions = $DB->get_records('workshop_submissions', array('workshopid' => $workshop->id));
@@ -1795,9 +1799,10 @@ function workshop_reset_userdata($data) {
         
         $DB->set_field('workshop', 'phase', 0, array('id' => $workshop->id));
         $tx->allow_commit();
+        */
 
     }
-    $status[] = array('component' => $componentstr, 'item' => get_string('resetworkshopall', 'workshop'), 'error' => false);
-    return $status;
+    
+    return $result;
 }
 
