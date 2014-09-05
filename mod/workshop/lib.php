@@ -1726,83 +1726,9 @@ function workshop_reset_userdata($data) {
     foreach ($workshops as $workshop) {
         $cm = get_coursemodule_from_instance("workshop", $workshop->id, $data->courseid);
         $wx = new workshop($workshop, $cm, $course);
-        $result = $wx->reset_userdata($data);
-        /* The tricky bit work out what to delete
-         * we're going to go nuclear, no options just reset it so that it's like the user just created it.
-        *
-        * We have to deal with in order
-        * workshop_aggregations
-        * workshop_grades
-        * workshop_assessments
-        * workshop_submissions
-        *
-        * These are all "old" tables used in legacy workshops
-        * workshop_old
-        * workshop_elements_old
-        * workshop_rubrics_old
-        * workshop_submissions_old
-        * workshop_assessments_old
-        * workshop_grades_old
-        * workshop_stockcomments_old
-        * workshop_comments_old
-        *
-        * Have to also reset the "phase" option to 0
-        */
-        /*
-        $tx = $DB->start_delegated_transaction();
-        $delaggregations = $DB->delete_records('workshop_aggregations', array('workshopid' => $workshop->id));
-        $submissions = $DB->get_records('workshop_submissions', array('workshopid' => $workshop->id));
-        foreach ($submissions as $submission) {
-            $assessments = $DB->get_records('workshop_assessments', array('submissionid' => $submission->id));
-            foreach ($assessments as $assessment) {
-                $delgrades = $DB->delete_records('workshop_grades', array('assessmentid' => $assessment->id));
-            }
-            $delassessments = $DB->delete_records('workshop_assessments', array('submissionid' => $submission->id));
-        }
-        $delsubmissions = $DB->get_records('workshop_submissions', array('workshopid' => $workshop->id));
-        // End slow version.
-
-        // Clean up submission files 
-        $fs = get_file_storage();
-        $files = $fs->get_area_files($workshop->context->id, 'mod_workshop', 'submission_attachment', false);//$submission->id);
-        $numberfilestodelete = count($files);
-        $numfilesdeleted = 0;
-        foreach ($files as $file) {
-            try {
-                $file->delete();
-                $numfilesdeleted++;
-            } catch ($exception){
-            
-            }
-        }
-        
-        //Call back to subplugins to allow them to reset
-        foreach ($allocators as $allocator => $path) {
-            require_once($path.'/lib.php');
-            $classname = 'workshop_'.$allocator.'_allocator';
-            call_user_func($classname.'::reset_user_data', $workshop->id);
-        }
-        
-        $evaluators = core_component::get_plugin_list('workshopeval');
-        foreach ($evaluators as $evaluator => $path) {
-            require_once($path.'/lib.php');
-            $classname = 'workshop_'.$evaluator.'_evaluation';
-            call_user_func($classname.'::reset_user_data', $workshop->id);
-        }
-        
-        // Delete the calendar events. They'll reappear once the instance is updated wiht modifications etc
-        $events = $DB->get_records('event', array('modulename' => 'workshop', 'instance' => $workshop->id));
-        foreach ($events as $event) {
-            $event = calendar_event::load($event);
-            $event->delete();
-        }
-        
-        $DB->set_field('workshop', 'phase', 0, array('id' => $workshop->id));
-        $tx->allow_commit();
-        */
-
+        $status = array_merge($status, $wx->reset_userdata($data));
     }
     
-    return $result;
+    return $status;
 }
 
