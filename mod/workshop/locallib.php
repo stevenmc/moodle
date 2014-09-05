@@ -2626,7 +2626,7 @@ class workshop {
         $this->reset_evaluators();
         $this->reset_strategies();
 
-        $DB->set_field('workshop', 'phase', 0, array('id' => $workshop->id));
+        
 
         $events = $DB->get_records('event', array('modulename' => 'workshop', 'instance' => $this->id));
         foreach ($events as $event) {
@@ -2635,6 +2635,7 @@ class workshop {
         }
 
         // Set the phase.
+        // $DB->set_field('workshop', 'phase', 0, array('id' => $workshop->id));    // Left in to give option to switch back after discussion.
         $this->switch_phase(self::PHASE_SETUP);    // Use the API but we may not want to raise events about this....
 
         $status[] = array('component' => $componentstr, 'item' => get_string('resetworkshopall', 'workshop'), 'error' => false);
