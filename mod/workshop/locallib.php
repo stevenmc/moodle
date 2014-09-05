@@ -2626,8 +2626,6 @@ class workshop {
         $this->reset_evaluators();
         $this->reset_strategies();
 
-        
-
         $events = $DB->get_records('event', array('modulename' => 'workshop', 'instance' => $this->id));
         foreach ($events as $event) {
             $event = calendar_event::load($event);
