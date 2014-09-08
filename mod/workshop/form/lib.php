@@ -102,6 +102,13 @@ interface workshop_strategy {
     public function get_assessments_recordset($restrict=null);
 
     /**
+     * Delete user-data related to a given workshop module instance
+     * @param int $workshopid
+     * @return void|array
+     */
+    public function reset_userdata($workshopid);
+    
+    /**
      * Is a given scale used by the instance of workshop?
      *
      * If the grading strategy does not use scales, it should just return false. If the strategy

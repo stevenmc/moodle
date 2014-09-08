@@ -123,6 +123,14 @@ class workshop_best_evaluation extends workshop_evaluation {
     }
 
     /**
+     * (non-PHPdoc)
+     * @see workshop_evaluation::reset_userdata()
+     */
+    public function reset_userdata($workshopid) {
+        // TODO.
+        return;
+    }
+    /**
      * Delete all data related to a given workshop module instance
      *
      * @see workshop_delete_instance()

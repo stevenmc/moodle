@@ -241,6 +241,15 @@ class workshop_random_allocator implements workshop_allocator {
     }
 
     /**
+     * Delete all user-related ata in given workshop module instance (non-PHPdoc)
+     * @see workshop_allocator::reset_userdata()
+     */
+    public function reset_userdata($workshopid) {
+        // TODO
+        return;
+    }
+
+    /**
      * Delete all data related to a given workshop module instance
      *
      * This plugin does not store any data.

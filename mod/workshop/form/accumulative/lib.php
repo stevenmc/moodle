@@ -356,6 +356,15 @@ class workshop_accumulative_strategy implements workshop_strategy {
     }
 
     /**
+     * (non-PHPdoc)
+     * @see workshop_strategy::reset_userdata()
+     */
+    public function reset_userdata($workshopid) {
+        // TODO.
+        return;
+    }
+
+    /**
      * Is a given scale used by the instance of workshop?
      *
      * @param int $scaleid id of the scale to check

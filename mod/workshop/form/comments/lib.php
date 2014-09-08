@@ -345,6 +345,15 @@ class workshop_comments_strategy implements workshop_strategy {
     }
 
     /**
+     * (non-PHPdoc)
+     * @see workshop_strategy::reset_userdata()
+     */
+    public function reset_userdata($workshopid) {
+        // TODO.
+        return;
+    }
+
+    /**
      * Is a given scale used by the instance of workshop?
      *
      * This grading strategy does not use scales.

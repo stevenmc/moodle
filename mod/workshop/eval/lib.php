@@ -57,6 +57,13 @@ abstract class workshop_evaluation {
     }
 
     /**
+     * Delete user-data related to a given workshop module instance
+     * @param int $workshopid
+     * @return void|array
+     */
+    public function reset_userdata($workshopid);
+
+    /**
      * Delete all data related to a given workshop module instance
      *
      * This is called from {@link workshop_delete_instance()}.

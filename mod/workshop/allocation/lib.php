@@ -68,6 +68,13 @@ interface workshop_allocator {
      * @return void
      */
     public static function delete_instance($workshopid);
+    
+    /**
+     * Delete all any user-related data from a given workshop module instance
+     * @param int $workshopid id of the workshop module instance being reset.
+     * @return void|array
+     */
+    public function reset_userdata($workshopid);
 }
 
 

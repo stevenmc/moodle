@@ -196,7 +196,15 @@ class workshop_scheduled_allocator implements workshop_allocator {
 
         return $result;
     }
-
+    /**
+     * Delete all user-related ata in given workshop module instance (non-PHPdoc)
+     * @see workshop_allocator::reset_userdata()
+     */
+    public function reset_userdata($workshopid) {
+        // TODO.
+        return;
+    }
+    
     /**
      * Delete all data related to a given workshop module instance
      *
@@ -208,6 +216,7 @@ class workshop_scheduled_allocator implements workshop_allocator {
         // TODO
         return;
     }
+    
 
     /**
      * Stores the pre-defined random allocation settings for later usage
