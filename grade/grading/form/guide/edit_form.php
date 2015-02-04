@@ -54,6 +54,7 @@ class gradingform_guide_editguide extends moodleform {
         $form->addElement('text', 'name', get_string('name', 'gradingform_guide'), array('size'=>52));
         $form->addRule('name', get_string('required'), 'required');
         $form->setType('name', PARAM_TEXT);
+        $form->addRule('name', null, 'maxlength', 255, 'client');
 
         // Description.
         $options = gradingform_guide_controller::description_form_field_options($this->_customdata['context']);

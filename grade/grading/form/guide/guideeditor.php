@@ -197,9 +197,12 @@ class moodlequickform_guideeditor extends HTML_QuickForm_input {
                     $errors['err_noshortname'] = 1;
                     $criterion['error_description'] = true;
                 }
+                if (strlen(trim($criterion['shortname'])) > 255) {
+                    $errors['err_shortnametoolong'] = 1;
+                    $criterion['error_description'] = true;
+                }
                 if (!strlen(trim($criterion['maxscore']))) {
                     $errors['err_nomaxscore'] = 1;
-                    $criterion['error_description'] = true;
                 } else if (!is_numeric($criterion['maxscore']) || $criterion['maxscore'] < 0) {
                     $errors['err_maxscorenotnumeric'] = 1;
                     $criterion['error_description'] = true;
