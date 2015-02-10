@@ -2122,6 +2122,7 @@ class MoodleQuickForm extends HTML_QuickForm_DHTMLRulesTableless {
                     }
                     // Fix for bug displaying errors for elements in a group
                     $test[$fullelementname][0][] = $registry->getValidationScript($element, $fullelementname, $rule);
+                    
                     $test[$fullelementname][1]=$element;
                     //end of fix
                 }
@@ -2232,7 +2233,10 @@ function validate_' . $this->_formName . '_' . $escapedElementName . '(element) 
     document.getElementById(\'id_error_'.$elementName.'\').focus();
   }
 ';
-
+            $attachKeyPress = false;
+            if ($jsandelement[1]->getType() == "text") {
+                $attachKeyPress = true;
+            }
             // Fix for bug displaying errors for elements in a group
             //unset($element);
             //$element =& $this->getElement($elementName);
@@ -2240,8 +2244,14 @@ function validate_' . $this->_formName . '_' . $escapedElementName . '(element) 
             $valFunc = 'validate_' . $this->_formName . '_' . $escapedElementName . '(this)';
             $onBlur = $element->getAttribute('onBlur');
             $onChange = $element->getAttribute('onChange');
-            $element->updateAttributes(array('onBlur' => $onBlur . $valFunc,
-                                             'onChange' => $onChange . $valFunc));
+            $onKeyPress = $element->getAttribute('onKeyPress');
+            $newAttributes = array('onBlur' => $onBlur . $valFunc,
+                                             'onChange' => $onChange . $valFunc);
+                                             
+            if ($attachKeyPress) {
+                $newAttributes['onKeyPress'] = $onKeyPress . $valFunc;
+            }
+            $element->updateAttributes($newAttributes);
         }
 //  do not rely on frm function parameter, because htmlarea breaks it when overloading the onsubmit method
         $js .= '
