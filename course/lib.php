@@ -1254,36 +1254,41 @@ function set_section_visible($courseid, $sectionnumber, $visibility) {
  */
 function get_module_metadata($course, $modnames, $sectionreturn = null) {
     global $CFG, $OUTPUT;
-
     // get_module_metadata will be called once per section on the page and courses may show
     // different modules to one another
     static $modlist = array();
     if (!isset($modlist[$course->id])) {
         $modlist[$course->id] = array();
     }
-
     $return = array();
     $urlbase = new moodle_url('/course/mod.php', array('id' => $course->id, 'sesskey' => sesskey()));
     if ($sectionreturn !== null) {
         $urlbase->param('sr', $sectionreturn);
-    }
+		$srkey = $sectionreturn;
+    } else {
+		$srkey = '-1';
+	}
+	
     foreach($modnames as $modname => $modnamestr) {
         if (!course_allowed_module($course, $modname)) {
             continue;
         }
-        if (isset($modlist[$course->id][$modname])) {
+		// check that the mod array for course is initialised
+		if (!isset($modlist[$course->id][$modname]) {
+			$modlist[$course->id][$modname] = array();
+		}
+		//check if the mod information in a given course based on modname AND sectionreturn
+        if (isset($modlist[$course->id][$modname][$srkey])) {
             // This module is already cached
-            $return[$modname] = $modlist[$course->id][$modname];
+            $return[$modname] = $modlist[$course->id][$modname][$srkey];
             continue;
         }
-
         // Include the module lib
         $libfile = "$CFG->dirroot/mod/$modname/lib.php";
         if (!file_exists($libfile)) {
             continue;
         }
         include_once($libfile);
-
         // NOTE: this is legacy stuff, module subtypes are very strongly discouraged!!
         $gettypesfunc =  $modname.'_get_types';
         $types = MOD_SUBTYPE_NO_CHILDREN;
@@ -1309,11 +1314,9 @@ function get_module_metadata($course, $modnames, $sectionreturn = null) {
                     $subtype->type = str_replace('&amp;', '&', $type->type);
                     $subtype->name = preg_replace('/.*type=/', '', $subtype->type);
                     $subtype->archetype = $type->modclass;
-
                     // The group archetype should match the subtype archetypes and all subtypes
                     // should have the same archetype
                     $group->archetype = $subtype->archetype;
-
                     if (!empty($type->help)) {
                         $subtype->help = $type->help;
                     } else if (get_string_manager()->string_exists('help' . $subtype->name, $modname)) {
@@ -1340,15 +1343,14 @@ function get_module_metadata($course, $modnames, $sectionreturn = null) {
                 }
             }
             $module->archetype = plugin_supports('mod', $modname, FEATURE_MOD_ARCHETYPE, MOD_ARCHETYPE_OTHER);
-            $modlist[$course->id][$modname] = $module;
+            $modlist[$course->id][$modname][$srkey] = $module;
         }
-        if (isset($modlist[$course->id][$modname])) {
-            $return[$modname] = $modlist[$course->id][$modname];
+        if (isset($modlist[$course->id][$modname][$srkey])) {
+            $return[$modname] = $modlist[$course->id][$modname][$srkey];
         } else {
             debugging("Invalid module metadata configuration for {$modname}");
         }
     }
-
     return $return;
 }
 
