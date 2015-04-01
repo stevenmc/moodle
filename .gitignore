@@ -37,3 +37,4 @@ composer.lock
 /lib/yuilib/*/*/*-coverage.js
 atlassian-ide-plugin.xml
 /node_modules/
+/mod/assign/submission/dropoff
