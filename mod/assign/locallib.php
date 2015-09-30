@@ -935,6 +935,8 @@ class assign {
      */
     public function update_instance($formdata) {
         global $DB;
+var_dump($formdata);
+die();
         $adminconfig = $this->get_admin_config();
 
         $update = new stdClass();
@@ -6087,7 +6089,10 @@ class assign {
                 }
             }
         }
-
+        if (true) {
+            $mform->addElement('text', 'attemptpenalty', get_string('attemptpenalty', 'assign'));
+            $mform->setDefault('attemptpenalty', 0);
+        }
         $gradinginfo = grade_get_grades($this->get_course()->id,
                                         'mod',
                                         'assign',
@@ -6216,6 +6221,7 @@ class assign {
                 $mform->addElement('selectyesno', 'addattempt', get_string('addattempt', 'assign'));
                 $mform->setDefault('addattempt', 0);
             }
+
         }
         $mform->addElement('selectyesno', 'sendstudentnotifications', get_string('sendstudentnotifications', 'assign'));
         // Get assignment visibility information for student.

@@ -42,7 +42,7 @@ class mod_assign_mod_form extends moodleform_mod {
      * @return void
      */
     public function definition() {
-        global $CFG, $COURSE, $DB, $PAGE;
+        global $CFG, $COURSE, $DB, $PAGE, $OUTPUT;
         $mform = $this->_form;
 
         $mform->addElement('header', 'general', get_string('general', 'form'));
@@ -128,6 +128,20 @@ class mod_assign_mod_form extends moodleform_mod {
         $mform->addElement('select', 'maxattempts', get_string('maxattempts', 'mod_assign'), $options);
         $mform->addHelpButton('maxattempts', 'maxattempts', 'assign');
         $mform->disabledIf('maxattempts', 'attemptreopenmethod', 'eq', ASSIGN_ATTEMPT_REOPEN_METHOD_NONE);
+
+/*
+    Attempt penalty code
+*/
+        $penaltydata = array(
+            'penalties' => array(
+                array('penalty' => '0'),
+                array('penalty' => '50'),
+                array('penalty' => '100'),
+            )
+        );
+        $o = $OUTPUT->render_from_template('mod_assign/attemptpenalties', $penaltydata);
+//"<div id='mod_assign_form_attemptpenalties'>Penalties</div>"
+        $mform->addElement('static','attemptpenalties', get_string('attemptpenalty', 'assign'),$o);
 
         $mform->addElement('header', 'groupsubmissionsettings', get_string('groupsubmissionsettings', 'assign'));
 
@@ -234,6 +248,10 @@ class mod_assign_mod_form extends moodleform_mod {
                                                      html_writer::tag('noscript',
                                                      get_string('changegradewarning', 'mod_assign')));
             $mform->insertElementBefore($noscriptwarning, 'grade');
+        }
+        if ($mform->elementExists('attemptpenalties')) {
+            $params = array();
+            $PAGE->requires->js_call_amd('mod_assign/attempts','initialize', $params);
         }
     }
 
