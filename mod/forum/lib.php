@@ -851,7 +851,7 @@ function forum_cron() {
 
     cron_setup_user();
 
-    $sitetimezone = $CFG->timezone;
+    $sitetimezone = core_date::get_server_timezone();
 
     // Now see if there are any digest mails waiting to be sent, and if we should send them
 
@@ -1190,7 +1190,7 @@ function forum_make_mail_text($course, $cm, $forum, $discussion, $post, $userfro
 
     $by = New stdClass;
     $by->name = fullname($userfrom, $viewfullnames);
-    $by->date = userdate($post->modified, "", $userto->timezone);
+    $by->date = userdate($post->modified, "", core_date::get_user_timezone($userto));
 
     $strbynameondate = get_string('bynameondate', 'forum', $by);
 
@@ -1214,6 +1214,7 @@ function forum_make_mail_text($course, $cm, $forum, $discussion, $post, $userfro
 
     $posttext .= "\n";
     $posttext .= $CFG->wwwroot.'/mod/forum/discuss.php?d='.$discussion->id;
+    $posttext .= "\n";
     $posttext .= format_string($post->subject,true);
     if ($bare) {
         $posttext .= " ($CFG->wwwroot/mod/forum/discuss.php?d=$discussion->id#p$post->id)";
@@ -3063,7 +3064,7 @@ function forum_make_mail_post($course, $cm, $forum, $discussion, $post, $userfro
     $fullname = fullname($userfrom, $viewfullnames);
     $by = new stdClass();
     $by->name = '<a href="'.$CFG->wwwroot.'/user/view.php?id='.$userfrom->id.'&amp;course='.$course->id.'">'.$fullname.'</a>';
-    $by->date = userdate($post->modified, '', $userto->timezone);
+    $by->date = userdate($post->modified, '', core_date::get_user_timezone($userto));
     $output .= '<div class="author">'.get_string('bynameondate', 'forum', $by).'</div>';
 
     $output .= '</td></tr>';
@@ -3388,7 +3389,7 @@ function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=fa
     }
 
     if (!empty($post->lastpost)) {
-        $forumpostclass = ' lastpost';
+        $forumpostclass .= ' lastpost';
     }
 
     $postbyuser = new stdClass;
@@ -3503,6 +3504,15 @@ function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=fa
             $replystring = get_string('repliesone', 'forum', $post->replies);
         } else {
             $replystring = get_string('repliesmany', 'forum', $post->replies);
+        }
+        if (!empty($discussion->unread) && $discussion->unread !== '-') {
+            $replystring .= ' <span class="sep">/</span> <span class="unread">';
+            if ($discussion->unread == 1) {
+                $replystring .= get_string('unreadpostsone', 'forum');
+            } else {
+                $replystring .= get_string('unreadpostsnumber', 'forum', $discussion->unread);
+            }
+            $replystring .= '</span>';
         }
 
         $output .= html_writer::start_tag('div', array('class'=>'link'));
@@ -3654,6 +3664,48 @@ function forum_rating_validate($params) {
     return true;
 }
 
+/**
+ * Can the current user see ratings for a given itemid?
+ *
+ * @param array $params submitted data
+ *            contextid => int contextid [required]
+ *            component => The component for this module - should always be mod_forum [required]
+ *            ratingarea => object the context in which the rated items exists [required]
+ *            itemid => int the ID of the object being rated [required]
+ *            scaleid => int scale id [optional]
+ * @return bool
+ * @throws coding_exception
+ * @throws rating_exception
+ */
+function mod_forum_rating_can_see_item_ratings($params) {
+    global $DB, $USER;
+
+    // Check the component is mod_forum.
+    if (!isset($params['component']) || $params['component'] != 'mod_forum') {
+        throw new rating_exception('invalidcomponent');
+    }
+
+    // Check the ratingarea is post (the only rating area in forum).
+    if (!isset($params['ratingarea']) || $params['ratingarea'] != 'post') {
+        throw new rating_exception('invalidratingarea');
+    }
+
+    if (!isset($params['itemid'])) {
+        throw new rating_exception('invaliditemid');
+    }
+
+    $post = $DB->get_record('forum_posts', array('id' => $params['itemid']), '*', MUST_EXIST);
+    $discussion = $DB->get_record('forum_discussions', array('id' => $post->discussion), '*', MUST_EXIST);
+    $forum = $DB->get_record('forum', array('id' => $discussion->forum), '*', MUST_EXIST);
+    $course = $DB->get_record('course', array('id' => $forum->course), '*', MUST_EXIST);
+    $cm = get_coursemodule_from_instance('forum', $forum->id, $course->id , false, MUST_EXIST);
+
+    // Perform some final capability checks.
+    if (!forum_user_can_see_post($forum, $discussion, $post, $USER, $cm)) {
+        return false;
+    }
+    return true;
+}
 
 /**
  * This function prints the overview of a discussion in the forum listing.
@@ -3929,14 +3981,10 @@ function forum_set_return() {
     global $CFG, $SESSION;
 
     if (! isset($SESSION->fromdiscussion)) {
-        if (!empty($_SERVER['HTTP_REFERER'])) {
-            $referer = $_SERVER['HTTP_REFERER'];
-        } else {
-            $referer = "";
-        }
+        $referer = get_local_referer(false);
         // If the referer is NOT a login screen then save it.
         if (! strncasecmp("$CFG->wwwroot/login", $referer, 300)) {
-            $SESSION->fromdiscussion = $_SERVER["HTTP_REFERER"];
+            $SESSION->fromdiscussion = $referer;
         }
     }
 }
@@ -3944,7 +3992,7 @@ function forum_set_return() {
 
 /**
  * @global object
- * @param string $default
+ * @param string|\moodle_url $default
  * @return string
  */
 function forum_go_back_to($default) {
@@ -4094,8 +4142,8 @@ function forum_print_attachments($post, $cm, $type) {
                 $output .= plagiarism_get_links(array('userid' => $post->userid,
                     'file' => $file,
                     'cmid' => $cm->id,
-                    'course' => $post->course,
-                    'forum' => $post->forum));
+                    'course' => $cm->course,
+                    'forum' => $cm->instance));
                 $output .= '<br />';
             }
         }
@@ -5137,11 +5185,6 @@ function forum_user_can_see_discussion($forum, $discussion, $context, $user=NULL
         return false;
     }
 
-    if ($forum->type == 'qanda' &&
-            !forum_user_has_posted($forum->id, $discussion->id, $user->id) &&
-            !has_capability('mod/forum:viewqandawithoutposting', $context)) {
-        return false;
-    }
     return true;
 }
 
@@ -6819,16 +6862,20 @@ function forum_reset_userdata($data) {
         $types       = array();
     } else if (!empty($data->reset_forum_types)){
         $removeposts = true;
-        $typesql     = "";
         $types       = array();
+        $sqltypes    = array();
         $forum_types_all = forum_get_forum_types_all();
         foreach ($data->reset_forum_types as $type) {
             if (!array_key_exists($type, $forum_types_all)) {
                 continue;
             }
-            $typesql .= " AND f.type=?";
             $types[] = $forum_types_all[$type];
-            $params[] = $type;
+            $sqltypes[] = $type;
+        }
+        if (!empty($sqltypes)) {
+            list($typesql, $typeparams) = $DB->get_in_or_equal($sqltypes);
+            $typesql = " AND f.type " . $typesql;
+            $params = array_merge($params, $typeparams);
         }
         $typesstr = get_string('resetforums', 'forum').': '.implode(', ', $types);
     }
@@ -7762,4 +7809,89 @@ function forum_get_context($forumid, $context = null) {
     }
 
     return $context;
+}
+
+/**
+ * Mark the activity completed (if required) and trigger the course_module_viewed event.
+ *
+ * @param  stdClass $forum   forum object
+ * @param  stdClass $course  course object
+ * @param  stdClass $cm      course module object
+ * @param  stdClass $context context object
+ * @since Moodle 2.9
+ */
+function forum_view($forum, $course, $cm, $context) {
+
+    // Completion.
+    $completion = new completion_info($course);
+    $completion->set_module_viewed($cm);
+
+    // Trigger course_module_viewed event.
+
+    $params = array(
+        'context' => $context,
+        'objectid' => $forum->id
+    );
+
+    $event = \mod_forum\event\course_module_viewed::create($params);
+    $event->add_record_snapshot('course_modules', $cm);
+    $event->add_record_snapshot('course', $course);
+    $event->add_record_snapshot('forum', $forum);
+    $event->trigger();
+}
+
+/**
+ * Trigger the discussion viewed event
+ *
+ * @param  stdClass $modcontext module context object
+ * @param  stdClass $forum      forum object
+ * @param  stdClass $discussion discussion object
+ * @since Moodle 2.9
+ */
+function forum_discussion_view($modcontext, $forum, $discussion) {
+    $params = array(
+        'context' => $modcontext,
+        'objectid' => $discussion->id,
+    );
+
+    $event = \mod_forum\event\discussion_viewed::create($params);
+    $event->add_record_snapshot('forum_discussions', $discussion);
+    $event->add_record_snapshot('forum', $forum);
+    $event->trigger();
+}
+
+/**
+ * Add nodes to myprofile page.
+ *
+ * @param \core_user\output\myprofile\tree $tree Tree object
+ * @param stdClass $user user object
+ * @param bool $iscurrentuser
+ * @param stdClass $course Course object
+ *
+ * @return bool
+ */
+function mod_forum_myprofile_navigation(core_user\output\myprofile\tree $tree, $user, $iscurrentuser, $course) {
+    if (isguestuser($user)) {
+        // The guest user cannot post, so it is not possible to view any posts.
+        // May as well just bail aggressively here.
+        return false;
+    }
+    $postsurl = new moodle_url('/mod/forum/user.php', array('id' => $user->id));
+    if (!empty($course)) {
+        $postsurl->param('course', $course->id);
+    }
+    $string = get_string('forumposts', 'mod_forum');
+    $node = new core_user\output\myprofile\node('miscellaneous', 'forumposts', $string, null, $postsurl);
+    $tree->add_node($node);
+
+    $discussionssurl = new moodle_url('/mod/forum/user.php', array('id' => $user->id, 'mode' => 'discussions'));
+    if (!empty($course)) {
+        $discussionssurl->param('course', $course->id);
+    }
+    $string = get_string('myprofileotherdis', 'mod_forum');
+    $node = new core_user\output\myprofile\node('miscellaneous', 'forumdiscussions', $string, null,
+        $discussionssurl);
+    $tree->add_node($node);
+
+    return true;
 }

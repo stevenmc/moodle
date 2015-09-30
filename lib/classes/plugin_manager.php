@@ -288,15 +288,30 @@ class core_plugin_manager {
         foreach ($plugintypes as $type => $typedir) {
             $plugs = core_component::get_plugin_list($type);
             foreach ($plugs as $plug => $fullplug) {
+                $module = new stdClass();
                 $plugin = new stdClass();
                 $plugin->version = null;
-                $module = $plugin;
-                @include($fullplug.'/version.php');
+                include($fullplug.'/version.php');
+
+                // Check if the legacy $module syntax is still used.
+                if (!is_object($module) or (count((array)$module) > 0)) {
+                    debugging('Unsupported $module syntax detected in version.php of the '.$type.'_'.$plug.' plugin.');
+                    $skipcache = true;
+                }
+
+                // Check if the component is properly declared.
+                if (empty($plugin->component) or ($plugin->component !== $type.'_'.$plug)) {
+                    debugging('Plugin '.$type.'_'.$plug.' does not declare valid $plugin->component in its version.php.');
+                    $skipcache = true;
+                }
+
                 $this->presentplugins[$type][$plug] = $plugin;
             }
         }
 
-        $cache->set('present', $this->presentplugins);
+        if (empty($skipcache)) {
+            $cache->set('present', $this->presentplugins);
+        }
     }
 
     /**
@@ -913,7 +928,7 @@ class core_plugin_manager {
             'qformat' => array('blackboard', 'learnwise'),
             'enrol' => array('authorize'),
             'tinymce' => array('dragmath'),
-            'tool' => array('bloglevelupgrade', 'qeupgradehelper'),
+            'tool' => array('bloglevelupgrade', 'qeupgradehelper', 'timezoneimport'),
             'theme' => array('mymobile', 'afterburner', 'anomaly', 'arialist', 'binarius', 'boxxie', 'brick', 'formal_white',
                 'formfactor', 'fusion', 'leatherbound', 'magazine', 'nimble', 'nonzero', 'overlay', 'serenity', 'sky_high',
                 'splash', 'standard', 'standardold'),
@@ -1096,7 +1111,8 @@ class core_plugin_manager {
 
             'qtype' => array(
                 'calculated', 'calculatedmulti', 'calculatedsimple',
-                'description', 'essay', 'match', 'missingtype', 'multianswer',
+                'ddimageortext', 'ddmarker', 'ddwtos', 'description',
+                'essay', 'gapselect', 'match', 'missingtype', 'multianswer',
                 'multichoice', 'numerical', 'random', 'randomsamatch',
                 'shortanswer', 'truefalse'
             ),
@@ -1143,7 +1159,7 @@ class core_plugin_manager {
                 'assignmentupgrade', 'availabilityconditions', 'behat', 'capability', 'customlang',
                 'dbtransfer', 'filetypes', 'generator', 'health', 'innodb', 'installaddon',
                 'langimport', 'log', 'messageinbound', 'multilangupgrade', 'monitor', 'phpunit', 'profiling',
-                'replace', 'spamcleaner', 'task', 'timezoneimport',
+                'replace', 'spamcleaner', 'task', 'templatelibrary',
                 'unittest', 'uploadcourse', 'uploaduser', 'unsuproles', 'xmldb'
             ),
 

@@ -77,11 +77,6 @@ class mod_lesson_mod_form extends moodleform_mod {
         $mform->setType('mediaclose', PARAM_BOOL);
         $mform->setDefault('mediaclose', $CFG->lesson_mediaclose);
 
-        /** Legacy maximum highscores element to maintain backwards compatibility */
-        $mform->addElement('hidden', 'maxhighscores');
-        $mform->setType('maxhighscores', PARAM_INT);
-        $mform->setDefault('maxhighscores', $CFG->lesson_maxhighscores);
-
         $mform->addElement('text', 'name', get_string('name'), array('size'=>'64'));
         if (!empty($CFG->formatstringstriptags)) {
             $mform->setType('name', PARAM_TEXT);
@@ -90,7 +85,7 @@ class mod_lesson_mod_form extends moodleform_mod {
         }
         $mform->addRule('name', null, 'required', null, 'client');
         $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
-        $this->add_intro_editor($config->requiremodintro);
+        $this->standard_intro_elements();
 
         // Appearance.
         $mform->addElement('header', 'appearancehdr', get_string('appearance'));
@@ -146,15 +141,15 @@ class mod_lesson_mod_form extends moodleform_mod {
         if ($mods = get_course_mods($COURSE->id)) {
             $modinstances = array();
             foreach ($mods as $mod) {
-
-                // get the module name and then store it in a new array
+                // Get the module name and then store it in a new array.
                 if ($module = get_coursemodule_from_instance($mod->modname, $mod->instance, $COURSE->id)) {
-                    if (isset($this->_cm->id) and $this->_cm->id != $mod->id){
+                    // Exclude this lesson, if it's already been saved.
+                    if (!isset($this->_cm->id) || $this->_cm->id != $mod->id) {
                         $modinstances[$mod->id] = $mod->modname.' - '.$module->name;
                     }
                 }
             }
-            asort($modinstances); // sort by module name
+            asort($modinstances); // Sort by module name.
             $modinstances=array(0=>get_string('none'))+$modinstances;
 
             $mform->addElement('select', 'activitylink', get_string('activitylink', 'lesson'), $modinstances);
@@ -187,34 +182,49 @@ class mod_lesson_mod_form extends moodleform_mod {
         $mform->disabledIf('passwordunmask', 'usepassword', 'eq', 0);
 
         // Dependent on.
-        $mform->addElement('header', 'dependencyon', get_string('prerequisitelesson', 'lesson'));
+        if ($this->current && isset($this->current->dependency) && $this->current->dependency) {
+            $mform->addElement('header', 'dependencyon', get_string('prerequisitelesson', 'lesson'));
+            $mform->addElement('static', 'warningobsolete',
+                get_string('warning', 'lesson'),
+                get_string('prerequisiteisobsolete', 'lesson'));
+            $options = array(0 => get_string('none'));
+            if ($lessons = get_all_instances_in_course('lesson', $COURSE)) {
+                foreach ($lessons as $lesson) {
+                    if ($lesson->id != $this->_instance) {
+                        $options[$lesson->id] = format_string($lesson->name, true);
+                    }
 
-        $options = array(0=>get_string('none'));
-        if ($lessons = get_all_instances_in_course('lesson', $COURSE)) {
-            foreach($lessons as $lesson) {
-                if ($lesson->id != $this->_instance){
-                    $options[$lesson->id] = format_string($lesson->name, true);
                 }
-
             }
+            $mform->addElement('select', 'dependency', get_string('dependencyon', 'lesson'), $options);
+            $mform->addHelpButton('dependency', 'dependencyon', 'lesson');
+            $mform->setDefault('dependency', 0);
+
+            $mform->addElement('text', 'timespent', get_string('timespentminutes', 'lesson'));
+            $mform->setDefault('timespent', 0);
+            $mform->setType('timespent', PARAM_INT);
+            $mform->disabledIf('timespent', 'dependency', 'eq', 0);
+
+            $mform->addElement('checkbox', 'completed', get_string('completed', 'lesson'));
+            $mform->setDefault('completed', 0);
+            $mform->disabledIf('completed', 'dependency', 'eq', 0);
+
+            $mform->addElement('text', 'gradebetterthan', get_string('gradebetterthan', 'lesson'));
+            $mform->setDefault('gradebetterthan', 0);
+            $mform->setType('gradebetterthan', PARAM_INT);
+            $mform->disabledIf('gradebetterthan', 'dependency', 'eq', 0);
+        } else {
+            $mform->addElement('hidden', 'dependency', 0);
+            $mform->setType('dependency', PARAM_INT);
+            $mform->addElement('hidden', 'timespent', 0);
+            $mform->setType('timespent', PARAM_INT);
+            $mform->addElement('hidden', 'completed', 0);
+            $mform->setType('completed', PARAM_INT);
+            $mform->addElement('hidden', 'gradebetterthan', 0);
+            $mform->setType('gradebetterthan', PARAM_INT);
+            $mform->setConstants(array('dependency' => 0, 'timespent' => 0,
+                    'completed' => 0, 'gradebetterthan' => 0));
         }
-        $mform->addElement('select', 'dependency', get_string('dependencyon', 'lesson'), $options);
-        $mform->addHelpButton('dependency', 'dependencyon', 'lesson');
-        $mform->setDefault('dependency', 0);
-
-        $mform->addElement('text', 'timespent', get_string('timespentminutes', 'lesson'));
-        $mform->setDefault('timespent', 0);
-        $mform->setType('timespent', PARAM_INT);
-        $mform->disabledIf('timespent', 'dependency', 'eq', 0);
-
-        $mform->addElement('checkbox', 'completed', get_string('completed', 'lesson'));
-        $mform->setDefault('completed', 0);
-        $mform->disabledIf('completed', 'dependency', 'eq', 0);
-
-        $mform->addElement('text', 'gradebetterthan', get_string('gradebetterthan', 'lesson'));
-        $mform->setDefault('gradebetterthan', 0);
-        $mform->setType('gradebetterthan', PARAM_INT);
-        $mform->disabledIf('gradebetterthan', 'dependency', 'eq', 0);
 
         // Flow control.
         $mform->addElement('header', 'flowcontrol', get_string('flowcontrol', 'lesson'));
@@ -325,6 +335,12 @@ class mod_lesson_mod_form extends moodleform_mod {
      **/
     function validation($data, $files) {
         $errors = parent::validation($data, $files);
+
+        // Check open and close times are consistent.
+        if ($data['available'] != 0 && $data['deadline'] != 0 &&
+                $data['deadline'] < $data['available']) {
+            $errors['deadline'] = get_string('closebeforeopen', 'lesson');
+        }
 
         if (!empty($data['usepassword']) && empty($data['password'])) {
             $errors['password'] = get_string('emptypassword', 'lesson');

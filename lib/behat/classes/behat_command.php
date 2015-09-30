@@ -86,26 +86,36 @@ class behat_command {
      *
      * @param  bool $custombyterm  If the provided command should depend on the terminal where it runs
      * @param bool $parallelrun If parallel run is installed.
+     * @param bool $absolutepath return command with absolute path.
      * @return string
      */
-    public final static function get_behat_command($custombyterm = false, $parallerun = false) {
+    public final static function get_behat_command($custombyterm = false, $parallerun = false, $absolutepath = false) {
 
         $separator = DIRECTORY_SEPARATOR;
-        if (!$parallerun) {
-            $exec = 'behat';
+        $exec = 'behat';
 
-            // Cygwin uses linux-style directory separators.
-            if ($custombyterm && testing_is_cygwin()) {
-                $separator = '/';
+        // Cygwin uses linux-style directory separators.
+        if ($custombyterm && testing_is_cygwin()) {
+            $separator = '/';
 
-                // MinGW can not execute .bat scripts.
-                if (!testing_is_mingw()) {
-                    $exec = 'behat.bat';
-                }
+            // MinGW can not execute .bat scripts.
+            if (!testing_is_mingw()) {
+                $exec = 'behat.bat';
             }
-            $command = 'vendor' . $separator . 'bin' . $separator . $exec;
+        }
+
+        // If relative path then prefix relative path.
+        if ($absolutepath) {
+            $pathprefix = testing_cli_argument_path('/') . $separator;
         } else {
-            $command = 'php admin' . $separator . 'tool' . $separator . 'behat' . $separator . 'cli' . $separator . 'run.php';
+            $pathprefix = '';
+        }
+
+        if (!$parallerun) {
+            $command = $pathprefix . 'vendor' . $separator . 'bin' . $separator . $exec;
+        } else {
+            $command = 'php ' . $pathprefix . 'admin' . $separator . 'tool' . $separator . 'behat' . $separator . 'cli'
+                . $separator . 'run.php';
         }
         return $command;
     }
@@ -147,7 +157,7 @@ class behat_command {
 
             // Returning composer error code to avoid conflicts with behat and moodle error codes.
             self::output_msg(get_string('errorcomposer', 'tool_behat'));
-            return BEHAT_EXITCODE_COMPOSER;
+            return TESTING_EXITCODE_COMPOSER;
         }
 
         // Behat test command.
@@ -157,7 +167,7 @@ class behat_command {
 
             // Returning composer error code to avoid conflicts with behat and moodle error codes.
             self::output_msg(get_string('errorbehatcommand', 'tool_behat', self::get_behat_command()));
-            return BEHAT_EXITCODE_COMPOSER;
+            return TESTING_EXITCODE_COMPOSER;
         }
 
         // No empty values.
@@ -195,7 +205,7 @@ class behat_command {
     }
 
     /**
-     * Has the site installed composer with --dev option
+     * Has the site installed composer.
      * @return bool
      */
     public static function are_behat_dependencies_installed() {

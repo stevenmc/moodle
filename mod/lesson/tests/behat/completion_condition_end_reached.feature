@@ -4,12 +4,11 @@ Feature: Set end of lesson reached as a completion condition for a lesson
   As a teacher
   I need to set end of lesson reached to mark the lesson activity as completed
 
-  @javascript
   Scenario: Set end reached as a condition
     Given the following "users" exist:
       | username | firstname | lastname | email |
-      | student1 | Student | 1 | student1@asd.com |
-      | teacher1 | Teacher | 1 | teacher1@asd.com |
+      | student1 | Student | 1 | student1@example.com |
+      | teacher1 | Teacher | 1 | teacher1@example.com |
     And the following "courses" exist:
       | fullname | shortname | category |
       | Course 1 | C1 | 0 |
@@ -17,10 +16,8 @@ Feature: Set end of lesson reached as a completion condition for a lesson
       | user | course | role |
       | teacher1 | C1 | editingteacher |
       | student1 | C1 | student |
-    And I log in as "admin"
-    And I set the following administration settings values:
-      | Enable completion tracking | 1 |
-    And I log out
+    And the following config values are set as admin:
+      | enablecompletion | 1 |
     And I log in as "teacher1"
     And I follow "Course 1"
     And I turn editing mode on
@@ -41,7 +38,7 @@ Feature: Set end of lesson reached as a completion condition for a lesson
       | id_answer_editor_0 | Next page |
       | id_jumpto_0 | Next page |
     And I press "Save page"
-    And I set the field "qtype" to "Add a content page"
+    And I select "Add a content page" from the "qtype" singleselect
     And I set the following fields to these values:
       | Page title | Second page name |
       | Page contents | Second page contents |
@@ -53,11 +50,11 @@ Feature: Set end of lesson reached as a completion condition for a lesson
     And I log out
     When I log in as "student1"
     And I follow "Course 1"
-    Then I hover "//li[contains(concat(' ', normalize-space(@class), ' '), ' modtype_lesson ')]/descendant::img[@alt='Not completed: Test lesson']" "xpath_element"
+    Then the "Test lesson" "lesson" activity with "auto" completion should be marked as not complete
     And I follow "Test lesson"
     And I press "Next page"
     And I follow "Course 1"
-    And I hover "//li[contains(concat(' ', normalize-space(@class), ' '), ' modtype_lesson ')]/descendant::img[@alt='Not completed: Test lesson']" "xpath_element"
+    Then the "Test lesson" "lesson" activity with "auto" completion should be marked as not complete
     And I follow "Course 1"
     And I follow "Test lesson"
     And I should see "You have seen more than one page of this lesson already."
@@ -66,7 +63,7 @@ Feature: Set end of lesson reached as a completion condition for a lesson
     And I press "Next page"
     And I press "Next page"
     And I follow "Course 1"
-    And I hover "//li[contains(concat(' ', normalize-space(@class), ' '), ' modtype_lesson ')]/descendant::img[@alt='Completed: Test lesson']" "xpath_element"
+    Then the "Test lesson" "lesson" activity with "auto" completion should be marked as complete
     And I log out
     And I log in as "teacher1"
     And I follow "Course 1"

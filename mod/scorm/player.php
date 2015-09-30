@@ -29,7 +29,7 @@ $newattempt = optional_param('newattempt', 'off', PARAM_ALPHA);     // the user 
 $displaymode = optional_param('display', '', PARAM_ALPHA);
 
 if (!empty($id)) {
-    if (! $cm = get_coursemodule_from_id('scorm', $id)) {
+    if (! $cm = get_coursemodule_from_id('scorm', $id, 0, true)) {
         print_error('invalidcoursemodule');
     }
     if (! $course = $DB->get_record("course", array("id" => $cm->course))) {
@@ -45,12 +45,20 @@ if (!empty($id)) {
     if (! $course = $DB->get_record("course", array("id" => $scorm->course))) {
         print_error('coursemisconf');
     }
-    if (! $cm = get_coursemodule_from_instance("scorm", $scorm->id, $course->id)) {
+    if (! $cm = get_coursemodule_from_instance("scorm", $scorm->id, $course->id, true)) {
         print_error('invalidcoursemodule');
     }
 } else {
     print_error('missingparameter');
 }
+
+// PARAM_RAW is used for $currentorg, validate it against records stored in the table.
+if (!empty($currentorg)) {
+    if (!$DB->record_exists('scorm_scoes', array('scorm' => $scorm->id, 'identifier' => $currentorg))) {
+        $currentorg = '';
+    }
+}
+
 // If new attempt is being triggered set normal mode and increment attempt number.
 $attempt = scorm_get_last_attempt($scorm->id, $USER->id);
 
@@ -155,7 +163,10 @@ $completion->set_module_viewed($cm);
 
 // Print the page header.
 if (empty($scorm->popup) || $displaymode == 'popup') {
-    $exitlink = html_writer::link($CFG->wwwroot.'/course/view.php?id='.$scorm->course, $strexit, array('title' => $strexit));
+    // Redirect back to the correct section if one section per page is being used.
+    $exiturl = course_get_url($course, $cm->sectionnum);
+
+    $exitlink = html_writer::link($exiturl, $strexit, array('title' => $strexit));
     $PAGE->set_button($exitlink);
 }
 

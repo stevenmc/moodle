@@ -225,7 +225,8 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
             $generatedcat = $generatedcats[$category['id']];
             $this->assertEquals($category['idnumber'], $generatedcat->idnumber);
             $this->assertEquals($category['name'], $generatedcat->name);
-            $this->assertEquals($category['description'], $generatedcat->description);
+            // Description was converted to the HTML format.
+            $this->assertEquals($category['description'], format_text($generatedcat->description, FORMAT_MOODLE, array('para' => false)));
             $this->assertEquals($category['descriptionformat'], FORMAT_HTML);
         }
 
@@ -243,6 +244,8 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         // Retrieve categories from parent.
         $categories = core_course_external::get_categories(array(
             array('key' => 'parent', 'value' => $category3->id)), 1);
+        $categories = external_api::clean_returnvalue(core_course_external::get_categories_returns(), $categories);
+
         $this->assertEquals(2, count($categories));
 
         // Retrieve all categories.
@@ -466,7 +469,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         // Admin can delete a course.
         $this->setAdminUser();
         // Validate_context() will fail as the email is not set by $this->setAdminUser().
-        $USER->email = 'emailtopass@contextvalidation.me';
+        $USER->email = 'emailtopass@example.com';
 
         $course1  = self::getDataGenerator()->create_course();
         $course2  = self::getDataGenerator()->create_course();
@@ -558,7 +561,8 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
             $dbcourse = $generatedcourses[$course['id']];
             $this->assertEquals($course['idnumber'], $dbcourse->idnumber);
             $this->assertEquals($course['fullname'], $dbcourse->fullname);
-            $this->assertEquals($course['summary'], $dbcourse->summary);
+            // Summary was converted to the HTML format.
+            $this->assertEquals($course['summary'], format_text($dbcourse->summary, FORMAT_MOODLE, array('para' => false)));
             $this->assertEquals($course['summaryformat'], FORMAT_HTML);
             $this->assertEquals($course['shortname'], $dbcourse->shortname);
             $this->assertEquals($course['categoryid'], $dbcourse->category);
@@ -594,6 +598,71 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $courses = external_api::clean_returnvalue(core_course_external::get_courses_returns(), $courses);
 
         $this->assertEquals($DB->count_records('course'), count($courses));
+    }
+
+    /**
+     * Test search_courses
+     */
+    public function test_search_courses () {
+
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/tag/lib.php');
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+        $generatedcourses = array();
+        $coursedata1['fullname'] = 'FIRST COURSE';
+        $course1  = self::getDataGenerator()->create_course($coursedata1);
+        $coursedata2['fullname'] = 'SECOND COURSE';
+        $course2  = self::getDataGenerator()->create_course($coursedata2);
+        // Search by name.
+        $results = core_course_external::search_courses('search', 'FIRST');
+        $results = external_api::clean_returnvalue(core_course_external::search_courses_returns(), $results);
+        $this->assertEquals($coursedata1['fullname'], $results['courses'][0]['fullname']);
+        $this->assertCount(1, $results['courses']);
+
+        // Create the forum.
+        $record = new stdClass();
+        $record->introformat = FORMAT_HTML;
+        $record->course = $course2->id;
+        // Set Aggregate type = Average of ratings.
+        $forum = self::getDataGenerator()->create_module('forum', $record);
+
+        // Search by module.
+        $results = core_course_external::search_courses('modulelist', 'forum');
+        $results = external_api::clean_returnvalue(core_course_external::search_courses_returns(), $results);
+        $this->assertEquals(1, $results['total']);
+
+        // Enable coursetag option.
+        set_config('block_tags_showcoursetags', true);
+        // Add tag 'TAG-LABEL ON SECOND COURSE' to Course2.
+        tag_set('course', $course2->id, array('TAG-LABEL ON SECOND COURSE'), 'core', context_course::instance($course2->id)->id);
+        $taginstance = $DB->get_record('tag_instance', array('itemtype' => 'course', 'itemid' => $course2->id), '*', MUST_EXIST);
+        // Search by tagid.
+        $results = core_course_external::search_courses('tagid', $taginstance->tagid);
+        $results = external_api::clean_returnvalue(core_course_external::search_courses_returns(), $results);
+        $this->assertEquals($coursedata2['fullname'], $results['courses'][0]['fullname']);
+
+        // Search by block (use news_items default block).
+        $blockid = $DB->get_field('block', 'id', array('name' => 'news_items'));
+        $results = core_course_external::search_courses('blocklist', $blockid);
+        $results = external_api::clean_returnvalue(core_course_external::search_courses_returns(), $results);
+        $this->assertEquals(2, $results['total']);
+
+        // Now as a normal user.
+        $user = self::getDataGenerator()->create_user();
+        $this->setUser($user);
+
+        $results = core_course_external::search_courses('search', 'FIRST');
+        $results = external_api::clean_returnvalue(core_course_external::search_courses_returns(), $results);
+        $this->assertCount(1, $results['courses']);
+        $this->assertEquals(1, $results['total']);
+        $this->assertEquals($coursedata1['fullname'], $results['courses'][0]['fullname']);
+
+        // Search by block (use news_items default block). Should fail (only admins allowed).
+        $this->setExpectedException('required_capability_exception');
+        $results = core_course_external::search_courses('blocklist', $blockid);
+
     }
 
     /**
@@ -937,6 +1006,8 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $courses = array($course1, $course2);
 
         $updatedcoursewarnings = core_course_external::update_courses($courses);
+        $updatedcoursewarnings = external_api::clean_returnvalue(core_course_external::update_courses_returns(),
+                                                                    $updatedcoursewarnings);
         $COURSE = $origcourse; // Restore $COURSE. Instead of using the OLD one set by the previous line.
 
         // Check that right number of courses were created.
@@ -994,6 +1065,8 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $this->unassignUserCapability('moodle/course:update', $contextid, $roleid);
         self::getDataGenerator()->enrol_user($user->id, $course1['id'], $roleid);
         $updatedcoursewarnings = core_course_external::update_courses($courses);
+        $updatedcoursewarnings = external_api::clean_returnvalue(core_course_external::update_courses_returns(),
+                                                                    $updatedcoursewarnings);
         $this->assertEquals(1, count($updatedcoursewarnings['warnings']));
 
         // Try update course category without capability.
@@ -1005,6 +1078,8 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $course1['categoryid'] = $category2->id;
         $courses = array($course1);
         $updatedcoursewarnings = core_course_external::update_courses($courses);
+        $updatedcoursewarnings = external_api::clean_returnvalue(core_course_external::update_courses_returns(),
+                                                                    $updatedcoursewarnings);
         $this->assertEquals(1, count($updatedcoursewarnings['warnings']));
 
         // Try update course fullname without capability.
@@ -1014,10 +1089,14 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $this->setUser($user);
         self::getDataGenerator()->enrol_user($user->id, $course1['id'], $roleid);
         $updatedcoursewarnings = core_course_external::update_courses($courses);
+        $updatedcoursewarnings = external_api::clean_returnvalue(core_course_external::update_courses_returns(),
+                                                                    $updatedcoursewarnings);
         $this->assertEquals(0, count($updatedcoursewarnings['warnings']));
         $course1['fullname'] = 'Testing fullname without permission';
         $courses = array($course1);
         $updatedcoursewarnings = core_course_external::update_courses($courses);
+        $updatedcoursewarnings = external_api::clean_returnvalue(core_course_external::update_courses_returns(),
+                                                                    $updatedcoursewarnings);
         $this->assertEquals(1, count($updatedcoursewarnings['warnings']));
 
         // Try update course shortname without capability.
@@ -1027,10 +1106,14 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $this->setUser($user);
         self::getDataGenerator()->enrol_user($user->id, $course1['id'], $roleid);
         $updatedcoursewarnings = core_course_external::update_courses($courses);
+        $updatedcoursewarnings = external_api::clean_returnvalue(core_course_external::update_courses_returns(),
+                                                                    $updatedcoursewarnings);
         $this->assertEquals(0, count($updatedcoursewarnings['warnings']));
         $course1['shortname'] = 'Testing shortname without permission';
         $courses = array($course1);
         $updatedcoursewarnings = core_course_external::update_courses($courses);
+        $updatedcoursewarnings = external_api::clean_returnvalue(core_course_external::update_courses_returns(),
+                                                                    $updatedcoursewarnings);
         $this->assertEquals(1, count($updatedcoursewarnings['warnings']));
 
         // Try update course idnumber without capability.
@@ -1040,10 +1123,14 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $this->setUser($user);
         self::getDataGenerator()->enrol_user($user->id, $course1['id'], $roleid);
         $updatedcoursewarnings = core_course_external::update_courses($courses);
+        $updatedcoursewarnings = external_api::clean_returnvalue(core_course_external::update_courses_returns(),
+                                                                    $updatedcoursewarnings);
         $this->assertEquals(0, count($updatedcoursewarnings['warnings']));
         $course1['idnumber'] = 'NEWIDNUMBER';
         $courses = array($course1);
         $updatedcoursewarnings = core_course_external::update_courses($courses);
+        $updatedcoursewarnings = external_api::clean_returnvalue(core_course_external::update_courses_returns(),
+                                                                    $updatedcoursewarnings);
         $this->assertEquals(1, count($updatedcoursewarnings['warnings']));
 
         // Try update course summary without capability.
@@ -1053,10 +1140,14 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $this->setUser($user);
         self::getDataGenerator()->enrol_user($user->id, $course1['id'], $roleid);
         $updatedcoursewarnings = core_course_external::update_courses($courses);
+        $updatedcoursewarnings = external_api::clean_returnvalue(core_course_external::update_courses_returns(),
+                                                                    $updatedcoursewarnings);
         $this->assertEquals(0, count($updatedcoursewarnings['warnings']));
         $course1['summary'] = 'New summary';
         $courses = array($course1);
         $updatedcoursewarnings = core_course_external::update_courses($courses);
+        $updatedcoursewarnings = external_api::clean_returnvalue(core_course_external::update_courses_returns(),
+                                                                    $updatedcoursewarnings);
         $this->assertEquals(1, count($updatedcoursewarnings['warnings']));
 
         // Try update course with invalid summary format.
@@ -1065,10 +1156,14 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $this->setUser($user);
         self::getDataGenerator()->enrol_user($user->id, $course1['id'], $roleid);
         $updatedcoursewarnings = core_course_external::update_courses($courses);
+        $updatedcoursewarnings = external_api::clean_returnvalue(core_course_external::update_courses_returns(),
+                                                                    $updatedcoursewarnings);
         $this->assertEquals(0, count($updatedcoursewarnings['warnings']));
         $course1['summaryformat'] = 10;
         $courses = array($course1);
         $updatedcoursewarnings = core_course_external::update_courses($courses);
+        $updatedcoursewarnings = external_api::clean_returnvalue(core_course_external::update_courses_returns(),
+                                                                    $updatedcoursewarnings);
         $this->assertEquals(1, count($updatedcoursewarnings['warnings']));
 
         // Try update course visibility without capability.
@@ -1079,10 +1174,14 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $course1['summaryformat'] = FORMAT_MOODLE;
         $courses = array($course1);
         $updatedcoursewarnings = core_course_external::update_courses($courses);
+        $updatedcoursewarnings = external_api::clean_returnvalue(core_course_external::update_courses_returns(),
+                                                                    $updatedcoursewarnings);
         $this->assertEquals(0, count($updatedcoursewarnings['warnings']));
         $course1['visible'] = 0;
         $courses = array($course1);
         $updatedcoursewarnings = core_course_external::update_courses($courses);
+        $updatedcoursewarnings = external_api::clean_returnvalue(core_course_external::update_courses_returns(),
+                                                                    $updatedcoursewarnings);
         $this->assertEquals(1, count($updatedcoursewarnings['warnings']));
     }
 
@@ -1210,7 +1309,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         // Setup the user to run the operation (ugly hack because validate_context() will
         // fail as the email is not set by $this->setAdminUser()).
         $this->setAdminUser();
-        $USER->email = 'emailtopass@contextvalidation.me';
+        $USER->email = 'emailtopass@example.com';
 
         // Import from course1 to course2.
         core_course_external::import_course($course1->id, $course2->id, 0);
@@ -1260,7 +1359,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         // Setup the user to run the operation (ugly hack because validate_context() will
         // fail as the email is not set by $this->setAdminUser()).
         $this->setAdminUser();
-        $USER->email = 'emailtopass@contextvalidation.me';
+        $USER->email = 'emailtopass@example.com';
 
         // Import from course1 to course2 without deleting content.
         core_course_external::import_course($course1->id, $course2->id, 0);
@@ -1306,7 +1405,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         // Setup the user to run the operation (ugly hack because validate_context() will
         // fail as the email is not set by $this->setAdminUser()).
         $this->setAdminUser();
-        $USER->email = 'emailtopass@contextvalidation.me';
+        $USER->email = 'emailtopass@example.com';
 
         // Import from course1 to course2 without deleting content, but excluding
         // activities.
@@ -1351,7 +1450,7 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         // Setup the user to run the operation (ugly hack because validate_context() will
         // fail as the email is not set by $this->setAdminUser()).
         $this->setAdminUser();
-        $USER->email = 'emailtopass@contextvalidation.me';
+        $USER->email = 'emailtopass@example.com';
 
         // Import from course1 to course2,  deleting content.
         core_course_external::import_course($course1->id, $course2->id, 1);
@@ -1385,5 +1484,104 @@ class core_course_externallib_testcase extends externallib_advanced_testcase {
         $this->setExpectedException('moodle_exception', get_string('invalidextparam', 'webservice', -1));
         // Import from course1 to course2, with invalid option
         core_course_external::import_course($course1->id, $course2->id, -1);;
+    }
+
+    /**
+     * Test view_course function
+     */
+    public function test_view_course() {
+
+        $this->resetAfterTest();
+
+        // Course without sections.
+        $course = $this->getDataGenerator()->create_course(array('numsections' => 5), array('createsections' => true));
+        $this->setAdminUser();
+
+        // Redirect events to the sink, so we can recover them later.
+        $sink = $this->redirectEvents();
+
+        $result = core_course_external::view_course($course->id, 1);
+        $result = external_api::clean_returnvalue(core_course_external::view_course_returns(), $result);
+        $events = $sink->get_events();
+        $event = reset($events);
+
+        // Check the event details are correct.
+        $this->assertInstanceOf('\core\event\course_viewed', $event);
+        $this->assertEquals(context_course::instance($course->id), $event->get_context());
+        $this->assertEquals(1, $event->other['coursesectionnumber']);
+
+        $result = core_course_external::view_course($course->id);
+        $result = external_api::clean_returnvalue(core_course_external::view_course_returns(), $result);
+        $events = $sink->get_events();
+        $event = array_pop($events);
+        $sink->close();
+
+        // Check the event details are correct.
+        $this->assertInstanceOf('\core\event\course_viewed', $event);
+        $this->assertEquals(context_course::instance($course->id), $event->get_context());
+        $this->assertEmpty($event->other);
+
+    }
+
+    /**
+     * Test get_course_module
+     */
+    public function test_get_course_module() {
+        global $DB;
+
+        $this->resetAfterTest(true);
+
+        $this->setAdminUser();
+        $course = self::getDataGenerator()->create_course();
+        $record = array(
+            'course' => $course->id,
+            'name' => 'First Chat'
+        );
+        $options = array(
+            'idnumber' => 'ABC',
+            'visible' => 0
+        );
+        // Hidden activity.
+        $chat = self::getDataGenerator()->create_module('chat', $record, $options);
+
+        // Test admin user can see the complete hidden activity.
+        $result = core_course_external::get_course_module($chat->cmid);
+        $result = external_api::clean_returnvalue(core_course_external::get_course_module_returns(), $result);
+
+        $this->assertCount(0, $result['warnings']);
+        // Test we retrieve all the fields.
+        $this->assertCount(22, $result['cm']);
+        $this->assertEquals($record['name'], $result['cm']['name']);
+        $this->assertEquals($options['idnumber'], $result['cm']['idnumber']);
+
+        $student = $this->getDataGenerator()->create_user();
+        $studentrole = $DB->get_record('role', array('shortname' => 'student'));
+
+        self::getDataGenerator()->enrol_user($student->id,  $course->id, $studentrole->id);
+        $this->setUser($student);
+
+        // The user shouldn't be able to see the activity.
+        try {
+            core_course_external::get_course_module($chat->cmid);
+            $this->fail('Exception expected due to invalid permissions.');
+        } catch (moodle_exception $e) {
+            $this->assertEquals('requireloginerror', $e->errorcode);
+        }
+
+        // Make module visible.
+        set_coursemodule_visible($chat->cmid, 1);
+
+        // Test student user.
+        $result = core_course_external::get_course_module($chat->cmid);
+        $result = external_api::clean_returnvalue(core_course_external::get_course_module_returns(), $result);
+
+        $this->assertCount(0, $result['warnings']);
+        // Test we retrieve only the few files we can see.
+        $this->assertCount(11, $result['cm']);
+        $this->assertEquals($chat->cmid, $result['cm']['id']);
+        $this->assertEquals($course->id, $result['cm']['course']);
+        $this->assertEquals('chat', $result['cm']['modname']);
+        $this->assertEquals($chat->id, $result['cm']['instance']);
+
     }
 }

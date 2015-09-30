@@ -57,6 +57,11 @@ $addcontact     = optional_param('addcontact',     0, PARAM_INT); // adding a co
 $removecontact  = optional_param('removecontact',  0, PARAM_INT); // removing a contact
 $blockcontact   = optional_param('blockcontact',   0, PARAM_INT); // blocking a contact
 $unblockcontact = optional_param('unblockcontact', 0, PARAM_INT); // unblocking a contact
+$deletemessageid = optional_param('deletemessageid', 0, PARAM_INT);
+$deletemessageconfirm = optional_param('deletemessageconfirm', 0, PARAM_BOOL);
+if ($deletemessageid) {
+    $deletemessagetype = required_param('deletemessagetype', PARAM_ALPHAEXT);
+}
 
 //for search
 $advancedsearch = optional_param('advanced', 0, PARAM_INT);
@@ -125,13 +130,25 @@ if (substr($viewing, 0, 7) == MESSAGE_VIEW_COURSE) {
     $PAGE->set_pagelayout('incourse');
 } else {
     $PAGE->set_pagelayout('standard');
-    $PAGE->set_context(context_user::instance($user1->id));
 }
+// Page context should always be set to user.
+$PAGE->set_context(context_user::instance($user1->id));
 if (!empty($user1->id) && $user1->id != $USER->id) {
     $PAGE->navigation->extend_for_user($user1);
 }
 if (!empty($user2->id) && $user2realuser && ($user2->id != $USER->id)) {
     $PAGE->navigation->extend_for_user($user2);
+}
+
+$strmessages = get_string('messages', 'message');
+if ($user2realuser) {
+    $user2fullname = fullname($user2);
+
+    $PAGE->set_title("$strmessages: $user2fullname");
+    $PAGE->set_heading("$strmessages: $user2fullname");
+} else {
+    $PAGE->set_title("{$SITE->shortname}: $strmessages");
+    $PAGE->set_heading("{$SITE->shortname}: $strmessages");
 }
 
 /// Process any contact maintenance requests there may be
@@ -147,6 +164,29 @@ if ($blockcontact and confirm_sesskey()) {
 }
 if ($unblockcontact and confirm_sesskey()) {
     message_unblock_contact($unblockcontact);
+}
+if ($deletemessageid and confirm_sesskey()) {
+    // Check that the message actually exists.
+    if ($message = $DB->get_record($deletemessagetype, array('id' => $deletemessageid))) {
+        // Check that we are allowed to delete this message.
+        if (message_can_delete_message($message, $user1->id)) {
+            if (!$deletemessageconfirm) {
+                $confirmurl = new moodle_url('/message/index.php', array('user1' => $user1->id, 'user2' => $user2->id,
+                    'viewing' => $viewing, 'deletemessageid' => $message->id, 'deletemessagetype' => $deletemessagetype,
+                    'deletemessageconfirm' => 1, 'sesskey' => sesskey()));
+                $confirmbutton = new single_button($confirmurl, get_string('delete'), 'post');
+                $strdeletemessage = get_string('deletemessage', 'message');
+                $PAGE->set_title($strdeletemessage);
+                echo $OUTPUT->header();
+                echo $OUTPUT->heading($strdeletemessage);
+                echo $OUTPUT->confirm(get_string('deletemessageconfirmation', 'message'), $confirmbutton, $url);
+                echo $OUTPUT->footer();
+                exit();
+            }
+            message_delete_message($message, $user1->id);
+        }
+    }
+    redirect($url);
 }
 
 //was a message sent? Do NOT allow someone looking at someone else's messages to send them.
@@ -194,10 +234,22 @@ if ($user2realuser) {
     $user2fullname = fullname($user2);
 
     $PAGE->set_title("$strmessages: $user2fullname");
-    $PAGE->set_heading("$strmessages: $user2fullname");
 } else {
     $PAGE->set_title("{$SITE->shortname}: $strmessages");
-    $PAGE->set_heading("{$SITE->shortname}: $strmessages");
+}
+$PAGE->set_heading(fullname($user1));
+
+// Remove the user node from the main navigation for this page.
+$usernode = $PAGE->navigation->find('users', null);
+$usernode->remove();
+
+$settings = $PAGE->settingsnav->find('messages', null);
+// Add the user we are contacting to the breadcrumb.
+if (!empty($user2realuser)) {
+    $usernode = $settings->add(fullname($user2), $url);
+    $usernode->make_active();
+} else {
+    $settings->make_active();
 }
 
 //now the page contents

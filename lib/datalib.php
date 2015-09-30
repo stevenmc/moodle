@@ -1212,30 +1212,6 @@ function get_scales_menu($courseid=0) {
     return $DB->get_records_sql_menu($sql, $params);
 }
 
-
-
-/**
- * Given a set of timezone records, put them in the database,  replacing what is there
- *
- * @global object
- * @param array $timezones An array of timezone records
- * @return void
- */
-function update_timezone_records($timezones) {
-    global $DB;
-
-/// Clear out all the old stuff
-    $DB->delete_records('timezone');
-
-/// Insert all the new stuff
-    foreach ($timezones as $timezone) {
-        if (is_array($timezone)) {
-            $timezone = (object)$timezone;
-        }
-        $DB->insert_record('timezone', $timezone);
-    }
-}
-
 /**
  * Increment standard revision field.
  *
@@ -1793,7 +1769,10 @@ function get_logs_usercourse($userid, $courseid, $coursestart) {
         $params['courseid'] = $courseid;
     }
     $params['userid'] = $userid;
-    $$coursestart = (int)$coursestart; // note: unfortunately pg complains if you use name parameter or column alias in GROUP BY
+    // We have to sanitize this param ourselves here instead of relying on DB.
+    // Postgres complains if you use name parameter or column alias in GROUP BY.
+    // See MDL-27696 and 51c3e85 for details.
+    $coursestart = (int)$coursestart;
 
     return $DB->get_records_sql("SELECT FLOOR((time - $coursestart)/". DAYSECS .") AS day, COUNT(*) AS num
                                    FROM {log}

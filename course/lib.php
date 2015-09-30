@@ -1633,7 +1633,7 @@ function set_coursemodule_visible($id, $visible) {
 }
 
 /**
- * This function will handles the whole deletion process of a module. This includes calling
+ * This function will handle the whole deletion process of a module. This includes calling
  * the modules delete_instance function, deleting files, events, grades, conditional data,
  * the data in the course_module and course_sections table and adding a module deletion
  * event to the DB.
@@ -1645,9 +1645,10 @@ function course_delete_module($cmid) {
     global $CFG, $DB;
 
     require_once($CFG->libdir.'/gradelib.php');
+    require_once($CFG->libdir.'/questionlib.php');
     require_once($CFG->dirroot.'/blog/lib.php');
     require_once($CFG->dirroot.'/calendar/lib.php');
-    require_once($CFG->dirroot . '/tag/lib.php');
+    require_once($CFG->dirroot.'/tag/lib.php');
 
     // Get the course module.
     if (!$cm = $DB->get_record('course_modules', array('id' => $cmid))) {
@@ -1678,6 +1679,9 @@ function course_delete_module($cmid) {
         throw new moodle_exception('cannotdeletemodulemissingfunc', '', '', null,
             "Cannot delete this module as the function {$modulename}_delete_instance is missing in mod/$modulename/lib.php.");
     }
+
+    // Delete activity context questions and question categories.
+    question_delete_activity($cm);
 
     // Call the delete_instance function, if it returns false throw an exception.
     if (!$deleteinstancefunction($cm->instance)) {
@@ -2543,7 +2547,8 @@ function course_overviewfiles_options($course) {
  * @return object new course instance
  */
 function create_course($data, $editoroptions = NULL) {
-    global $DB;
+    global $DB, $CFG;
+    require_once($CFG->dirroot.'/tag/lib.php');
 
     //check the categoryid - must be given for all new courses
     $category = $DB->get_record('course_categories', array('id'=>$data->category), '*', MUST_EXIST);
@@ -2619,6 +2624,11 @@ function create_course($data, $editoroptions = NULL) {
     // set up enrolments
     enrol_course_updated(true, $course, $data);
 
+    // Update course tags.
+    if ($CFG->usetags && isset($data->tags)) {
+        tag_set('course', $course->id, $data->tags, 'core', context_course::instance($course->id)->id);
+    }
+
     // Trigger a course created event.
     $event = \core\event\course_created::create(array(
         'objectid' => $course->id,
@@ -2642,7 +2652,8 @@ function create_course($data, $editoroptions = NULL) {
  * @return void
  */
 function update_course($data, $editoroptions = NULL) {
-    global $DB;
+    global $DB, $CFG;
+    require_once($CFG->dirroot.'/tag/lib.php');
 
     $data->timemodified = time();
 
@@ -2728,6 +2739,11 @@ function update_course($data, $editoroptions = NULL) {
 
     // update enrol settings
     enrol_course_updated(false, $course, $data);
+
+    // Update course tags.
+    if ($CFG->usetags && isset($data->tags)) {
+        tag_set('course', $course->id, $data->tags, 'core', context_course::instance($course->id)->id);
+    }
 
     // Trigger a course updated event.
     $event = \core\event\course_updated::create(array(
@@ -3755,4 +3771,24 @@ function course_change_sortorder_after_course($courseorid, $moveaftercourseid) {
     fix_course_sortorder();
     cache_helper::purge_by_event('changesincourse');
     return true;
+}
+
+/**
+ * Trigger course viewed event. This API function is used when course view actions happens,
+ * usually in course/view.php but also in external functions.
+ *
+ * @param stdClass  $context course context object
+ * @param int $sectionnumber section number
+ * @since Moodle 2.9
+ */
+function course_view($context, $sectionnumber = 0) {
+
+    $eventdata = array('context' => $context);
+
+    if (!empty($sectionnumber)) {
+        $eventdata['other']['coursesectionnumber'] = $sectionnumber;
+    }
+
+    $event = \core\event\course_viewed::create($eventdata);
+    $event->trigger();
 }

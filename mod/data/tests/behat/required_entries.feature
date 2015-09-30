@@ -7,8 +7,8 @@ Feature: Users can be required to specify certain fields when adding entries to 
   Background:
     Given the following "users" exist:
       | username | firstname | lastname | email |
-      | student1 | Student | 1 | student1@asd.com |
-      | teacher1 | Teacher | 1 | teacher1@asd.com |
+      | student1 | Student | 1 | student1@example.com |
+      | teacher1 | Teacher | 1 | teacher1@example.com |
     And the following "courses" exist:
       | fullname | shortname | category |
       | Course 1 | C1 | 0 |
@@ -204,3 +204,24 @@ Feature: Users can be required to specify certain fields when adding entries to 
        | Required URL                  | http://example.com/ |
        | Required Multimenu            | Option 1            |
        | Required Two-Option Multimenu | Option 1            |
+
+  Scenario: A student fills in Latitude but not Longitude will see an error
+    Given I log in as "student1"
+    And I follow "Course 1"
+    When I add an entry to "Test database name" database with:
+       | Base Text input               | Some input to allow us to submit the otherwise empty form |
+       | Required Checkbox Option 1    | 1                                                         |
+       | RTOC Option 1                 | 1                                                         |
+       | Latitude                      | 24                                                        |
+       | Required Menu                 | 1                                                         |
+       | Required Number               | 1                                                         |
+       | Required Radio Option 1       | 1                                                         |
+       | Required Text input           | New entry text                                            |
+       | Required Text area            | More text                                                 |
+       | Required URL                  | http://example.com/                                       |
+       | Required Multimenu            | 1                                                         |
+       | Required Two-Option Multimenu | 1                                                         |
+    And I set the field with xpath "//div[@title='Not required Latlong']//tr[td/label[normalize-space(.)='Latitude']]/td/input" to "20"
+    And I press "Save and view"
+    Then ".alert.alert-error" "css_element" should exist in the "Required Latlong" "table_row"
+    And ".alert.alert-error" "css_element" should exist in the "Not required Latlong" "table_row"

@@ -88,6 +88,9 @@ function user_create_user($user, $updatepassword = true, $triggerevent = true) {
     if (!isset($user->trackforums)) {
         $user->trackforums = $CFG->defaultpreference_trackforums;
     }
+    if (!isset($user->lang)) {
+        $user->lang = $CFG->lang;
+    }
 
     $user->timecreated = time();
     $user->timemodified = $user->timecreated;
@@ -332,8 +335,19 @@ function user_get_user_details($user, $course = null, array $userfields = array(
             $newfield = 'profile_field_'.$field->datatype;
             $formfield = new $newfield($field->id, $user->id);
             if ($formfield->is_visible() and !$formfield->is_empty()) {
+
+                // TODO: Part of MDL-50728, this conditional coding must be moved to
+                // proper profile fields API so they are self-contained.
+                // We only use display_data in fields that require text formatting.
+                if ($field->datatype == 'text' or $field->datatype == 'textarea') {
+                    $fieldvalue = $formfield->display_data();
+                } else {
+                    // Cases: datetime, checkbox and menu.
+                    $fieldvalue = $formfield->data;
+                }
+
                 $userdetails['customfields'][] =
-                    array('name' => $formfield->field->name, 'value' => $formfield->data,
+                    array('name' => $formfield->field->name, 'value' => $fieldvalue,
                         'type' => $field->datatype, 'shortname' => $formfield->field->shortname);
             }
         }
@@ -674,6 +688,11 @@ function user_convert_text_to_menu_items($text, $page) {
             $bits[1] = null;
             $child->itemtype = "invalid";
         } else {
+            // Nasty hack to replace the grades with the direct url.
+            if (strpos($bits[1], '/grade/report/mygrades.php') !== false) {
+                $bits[1] = user_mygrades_url();
+            }
+
             // Make sure the url is a moodle url.
             $bits[1] = new moodle_url(trim($bits[1]));
         }
@@ -708,6 +727,9 @@ function user_convert_text_to_menu_items($text, $page) {
  *
  * @param stdclass $user user object.
  * @param moodle_page $page page object.
+ * @param array $options associative array.
+ *     options are:
+ *     - avatarsize=35 (size of avatar image)
  * @return stdClass $returnobj navigation information object, where:
  *
  *      $returnobj->navitems    array    array of links where each link is a
@@ -750,7 +772,7 @@ function user_convert_text_to_menu_items($text, $page) {
  *          mnetidprovidername    string name of the MNet provider
  *          mnetidproviderwwwroot string URL of the MNet provider
  */
-function user_get_user_navigation_info($user, $page) {
+function user_get_user_navigation_info($user, $page, $options = array()) {
     global $OUTPUT, $DB, $SESSION, $CFG;
 
     $returnobject = new stdClass();
@@ -768,12 +790,13 @@ function user_get_user_navigation_info($user, $page) {
     $returnobject->metadata['userprofileurl'] = new moodle_url('/user/profile.php', array(
         'id' => $user->id
     ));
+
+    $avataroptions = array('link' => false, 'visibletoscreenreaders' => false);
+    if (!empty($options['avatarsize'])) {
+        $avataroptions['size'] = $options['avatarsize'];
+    }
     $returnobject->metadata['useravatar'] = $OUTPUT->user_picture (
-        $user,
-        array(
-            'link' => false,
-            'visibletoscreenreaders' => false
-        )
+        $user, $avataroptions
     );
     // Build a list of items for a regular user.
 
@@ -801,7 +824,7 @@ function user_get_user_navigation_info($user, $page) {
         }
     }
 
-    // Links: My Home.
+    // Links: Dashboard.
     $myhome = new stdClass();
     $myhome->itemtype = 'link';
     $myhome->url = new moodle_url('/my/');
@@ -813,7 +836,7 @@ function user_get_user_navigation_info($user, $page) {
     $myprofile = new stdClass();
     $myprofile->itemtype = 'link';
     $myprofile->url = new moodle_url('/user/profile.php', array('id' => $user->id));
-    $myprofile->title = get_string('myprofile');
+    $myprofile->title = get_string('profile');
     $myprofile->pix = "i/user";
     $returnobject->navitems[] = $myprofile;
 
@@ -853,13 +876,7 @@ function user_get_user_navigation_info($user, $page) {
         $returnobject->metadata['realuserprofileurl'] = new moodle_url('/user/profile.php', array(
             'id' => $realuser->id
         ));
-        $returnobject->metadata['realuseravatar'] = $OUTPUT->user_picture (
-            $realuser,
-            array(
-                'link' => false,
-                'visibletoscreenreaders' => false
-            )
-        );
+        $returnobject->metadata['realuseravatar'] = $OUTPUT->user_picture($realuser, $avataroptions);
 
         // Build a user-revert link.
         $userrevert = new stdClass();
@@ -1001,4 +1018,109 @@ function user_remove_user_device($uuid, $appid = "") {
     $DB->delete_records('user_devices', $conditions);
 
     return true;
+}
+
+/**
+ * Trigger user_list_viewed event.
+ *
+ * @param stdClass  $course course  object
+ * @param stdClass  $context course context object
+ * @since Moodle 2.9
+ */
+function user_list_view($course, $context) {
+
+    $event = \core\event\user_list_viewed::create(array(
+        'objectid' => $course->id,
+        'courseid' => $course->id,
+        'context' => $context,
+        'other' => array(
+            'courseshortname' => $course->shortname,
+            'coursefullname' => $course->fullname
+        )
+    ));
+    $event->trigger();
+}
+
+/**
+ * Returns the url to use for the "Grades" link in the user navigation.
+ *
+ * @param int $userid The user's ID.
+ * @param int $courseid The course ID if available.
+ * @return mixed A URL to be directed to for "Grades".
+ */
+function user_mygrades_url($userid = null, $courseid = SITEID) {
+    global $CFG, $USER;
+    $url = null;
+    if (isset($CFG->grade_mygrades_report) && $CFG->grade_mygrades_report != 'external') {
+        if (isset($userid) && $USER->id != $userid) {
+            // Send to the gradebook report.
+            $url = new moodle_url('/grade/report/' . $CFG->grade_mygrades_report . '/index.php',
+                    array('id' => $courseid, 'userid' => $userid));
+        } else {
+            $url = new moodle_url('/grade/report/' . $CFG->grade_mygrades_report . '/index.php');
+        }
+    } else if (isset($CFG->grade_mygrades_report) && $CFG->grade_mygrades_report == 'external'
+            && !empty($CFG->gradereport_mygradeurl)) {
+        $url = $CFG->gradereport_mygradeurl;
+    } else {
+        $url = $CFG->wwwroot;
+    }
+    return $url;
+}
+
+/**
+ * Check if a user has the permission to viewdetails in a shared course's context.
+ *
+ * @param object $user The other user's details.
+ * @param object $course Use this course to see if we have permission to see this user's profile.
+ * @param context $usercontext The user context if available.
+ * @return bool true for ability to view this user, else false.
+ */
+function user_can_view_profile($user, $course = null, $usercontext = null) {
+    global $USER, $CFG;
+
+    if ($user->deleted) {
+        return false;
+    }
+
+    // If any of these four things, return true.
+    // Number 1.
+    if ($USER->id == $user->id) {
+        return true;
+    }
+
+    // Number 2.
+    if (empty($CFG->forceloginforprofiles)) {
+        return true;
+    }
+
+    if (empty($usercontext)) {
+        $usercontext = context_user::instance($user->id);
+    }
+    // Number 3.
+    if (has_capability('moodle/user:viewdetails', $usercontext)) {
+        return true;
+    }
+
+    // Number 4.
+    if (has_coursecontact_role($user->id)) {
+        return true;
+    }
+
+    if (isset($course)) {
+        $sharedcourses = array($course);
+    } else {
+        $sharedcourses = enrol_get_shared_courses($USER->id, $user->id, true);
+    }
+    foreach ($sharedcourses as $sharedcourse) {
+        $coursecontext = context_course::instance($sharedcourse->id);
+        if (has_capability('moodle/user:viewdetails', $coursecontext)) {
+            if (!groups_user_groups_visible($sharedcourse, $user->id)) {
+                // Not a member of the same group.
+                continue;
+            }
+            return true;
+        }
+    }
+    return false;
 }

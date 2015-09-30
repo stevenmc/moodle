@@ -1,4 +1,4 @@
-@mod @mod_wiki
+@mod @mod_wiki @core_tag
 Feature: Edited wiki pages handle tags correctly
   In order to get wiki pages properly labelled
   As a user
@@ -7,8 +7,8 @@ Feature: Edited wiki pages handle tags correctly
   Background:
     Given the following "users" exist:
       | username | firstname | lastname | email |
-      | teacher1 | Teacher | 1 | teacher1@asd.com |
-      | student1 | Student | 1 | student1@asd.com |
+      | teacher1 | Teacher | 1 | teacher1@example.com |
+      | student1 | Student | 1 | student1@example.com |
     And the following "courses" exist:
       | fullname | shortname | category |
       | Course 1 | C1 | 0 |

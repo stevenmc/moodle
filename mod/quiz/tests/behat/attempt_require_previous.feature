@@ -6,9 +6,9 @@ Feature: Attemp a quiz where some questions require that the previous question h
 
   Background:
     Given the following "users" exist:
-      | username | firstname | lastname | email              |
-      | student  | Student   | One      | student@moodle.com |
-      | teacher  | Teacher   | One      | teacher@moodle.com |
+      | username | firstname | lastname | email               |
+      | student  | Student   | One      | student@example.com |
+      | teacher  | Teacher   | One      | teacher@example.com |
     And the following "courses" exist:
       | fullname | shortname | category |
       | Course 1 | C1        | 0        |
@@ -51,6 +51,8 @@ Feature: Attemp a quiz where some questions require that the previous question h
     And I should see "First question"
     And I should see "This question cannot be attempted until the previous question has been completed."
     And I should not see "Second question"
+    And "Question 1" "link" should exist
+    And "Question 2" "link" should not exist
 
   @javascript
   Scenario: A question requires the previous one becomes available when the first one is answered
@@ -76,6 +78,8 @@ Feature: Attemp a quiz where some questions require that the previous question h
     Then I should see "First question"
     And I should not see "This question cannot be attempted until the previous question has been completed."
     And I should see "Second question"
+    And "Question 1" "link" should exist
+    And "Question 2" "link" should exist
 
   @javascript
   Scenario: After quiz submitted, all questions show on the review page
@@ -126,18 +130,21 @@ Feature: Attemp a quiz where some questions require that the previous question h
     And I should not see "This question cannot be attempted until the previous question has been completed."
 
   @javascript
-  Scenario: A questions cannot be blocked in a shuffled quiz (despite what is set in the DB).
+  Scenario: Questions cannot be blocked in a shuffled section (despite what is set in the DB).
     Given the following "questions" exist:
       | questioncategory | qtype       | name  | questiontext    |
       | Test questions   | truefalse   | TF1   | First question  |
       | Test questions   | truefalse   | TF2   | Second question |
     And the following "activities" exist:
-      | activity   | name   | intro              | course | idnumber | preferredbehaviour | shufflequestions | questionsperpage |
-      | quiz       | Quiz 1 | Quiz 1 description | C1     | quiz1    | immediatefeedback  | 1                | 2                |
+      | activity   | name   | intro              | course | idnumber | preferredbehaviour | questionsperpage |
+      | quiz       | Quiz 1 | Quiz 1 description | C1     | quiz1    | immediatefeedback  | 2                |
     And quiz "Quiz 1" contains the following questions:
       | question | page | requireprevious |
       | TF1      | 1    | 1               |
-      | TF2      | 1    | 1               |
+      | TF2      | 2    | 1               |
+    And quiz "Quiz 1" contains the following sections:
+      | heading   | firstslot | shuffle |
+      | Section 1 | 1         | 1       |
 
     When I log in as "student"
     And I follow "Course 1"
@@ -146,6 +153,33 @@ Feature: Attemp a quiz where some questions require that the previous question h
 
     Then I should see "First question"
     And I should see "Second question"
+    And I should not see "This question cannot be attempted until the previous question has been completed."
+
+  @javascript
+  Scenario: Question dependency cannot apply to the first questions in section when the previous section is shuffled
+    Given the following "questions" exist:
+      | questioncategory | qtype       | name  | questiontext    |
+      | Test questions   | truefalse   | TF1   | First question  |
+      | Test questions   | truefalse   | TF2   | Second question |
+    And the following "activities" exist:
+      | activity   | name   | intro              | course | idnumber | preferredbehaviour | questionsperpage |
+      | quiz       | Quiz 1 | Quiz 1 description | C1     | quiz1    | immediatefeedback  | 2                |
+    And quiz "Quiz 1" contains the following questions:
+      | question | page | requireprevious |
+      | TF1      | 1    | 1               |
+      | TF2      | 2    | 1               |
+    And quiz "Quiz 1" contains the following sections:
+      | heading   | firstslot | shuffle |
+      | Section 1 | 1         | 1       |
+      | Section 2 | 2         | 0       |
+
+    When I log in as "student"
+    And I follow "Course 1"
+    And I follow "Quiz 1"
+    And I press "Attempt quiz now"
+    And I press "Next"
+
+    Then I should see "Second question"
     And I should not see "This question cannot be attempted until the previous question has been completed."
 
   @javascript

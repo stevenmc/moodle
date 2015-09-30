@@ -144,7 +144,12 @@ if ($action) {
                 $mform = new enrol_users_addmember_form(NULL, array('user'=>$user, 'course'=>$course, 'allgroups'=>$manager->get_all_groups()));
                 $mform->set_data($PAGE->url->params());
                 $data = $mform->get_data();
-                if ($mform->is_cancelled() || ($data && $manager->add_user_to_group($user, $data->groupid))) {
+                if ($mform->is_cancelled()) {
+                    redirect($PAGE->url);
+                } if (!empty($data->groupids)) {
+                    foreach ($data->groupids as $groupid) {
+                        $manager->add_user_to_group($user, $groupid);
+                    }
                     redirect($PAGE->url);
                 } else {
                     $pagetitle = get_string('addgroup', 'group');
@@ -182,9 +187,14 @@ $allusernames = get_all_user_name_fields(false, null, null, null, true);
 $usernameheader = null;
 // Get the alternative full name format for users with the viewfullnames capability.
 $fullusernames = $CFG->alternativefullnameformat;
-// If fullusernames is empty or accidentally set to language then fall back on the $allusernames set up.
+// If fullusernames is empty or accidentally set to language then fall back to default of just first and last name.
 if ($fullusernames == 'language' || empty($fullusernames)) {
-    $usernameheader = $allusernames;
+    // Set $a variables to return 'firstname' and 'lastname'.
+    $a = new stdClass();
+    $a->firstname = 'firstname';
+    $a->lastname = 'lastname';
+    // Getting the fullname display will ensure that the order in the language file is maintained.
+    $usernameheader = explode(' ', get_string('fullnamedisplay', null, $a));
 } else {
     // If everything is as expected then put them in the order specified by the alternative full name format setting.
     $usernameheader = order_in_string($allusernames, $fullusernames);
@@ -220,7 +230,8 @@ if (!has_capability('moodle/course:viewhiddenuserfields', $context)) {
 
 $filterform = new enrol_users_filter_form('users.php', array('manager' => $manager, 'id' => $id, 'newcourse' => $newcourse),
         'get', '', array('id' => 'filterform'));
-$filterform->set_data(array('search' => $search, 'ifilter' => $filter, 'role' => $role, 'filtergroup' => $fgroup));
+$filterform->set_data(array('search' => $search, 'ifilter' => $filter, 'role' => $role,
+    'filtergroup' => $fgroup, 'status' => $status));
 
 $table->set_fields($fields, $renderer);
 

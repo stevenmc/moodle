@@ -53,7 +53,10 @@ class core_user_external extends external_api {
                             'username' =>
                                 new external_value(PARAM_USERNAME, 'Username policy is defined in Moodle security config.'),
                             'password' =>
-                                new external_value(PARAM_RAW, 'Plain text password consisting of any characters'),
+                                new external_value(PARAM_RAW, 'Plain text password consisting of any characters', VALUE_OPTIONAL),
+                            'createpassword' =>
+                                new external_value(PARAM_BOOL, 'True if password should be created and mailed to user.',
+                                    VALUE_OPTIONAL),
                             'firstname' =>
                                 new external_value(PARAM_NOTAGS, 'The first name(s) of the user'),
                             'lastname' =>
@@ -149,6 +152,7 @@ class core_user_external extends external_api {
         $transaction = $DB->start_delegated_transaction();
 
         $userids = array();
+        $createpassword = false;
         foreach ($params['users'] as $user) {
             // Make sure that the username doesn't already exist.
             if ($DB->record_exists('user', array('username' => $user['username'], 'mnethostid' => $CFG->mnet_localhost_id))) {
@@ -173,6 +177,11 @@ class core_user_external extends external_api {
                 throw new invalid_parameter_exception('Invalid theme: '.$user['theme']);
             }
 
+            // Make sure we have a password or have to create one.
+            if (empty($user['password']) && empty($user['createpassword'])) {
+                throw new invalid_parameter_exception('Invalid password: you must provide a password, or set createpassword.');
+            }
+
             $user['confirmed'] = true;
             $user['mnethostid'] = $CFG->mnet_localhost_id;
 
@@ -185,8 +194,17 @@ class core_user_external extends external_api {
             }
             // End of user info validation.
 
+            $createpassword = !empty($user['createpassword']);
+            unset($user['createpassword']);
+            if ($createpassword) {
+                $user['password'] = '';
+                $updatepassword = false;
+            } else {
+                $updatepassword = true;
+            }
+
             // Create the user data now!
-            $user['id'] = user_create_user($user, true, false);
+            $user['id'] = user_create_user($user, $updatepassword, false);
 
             // Custom fields.
             if (!empty($user['customfields'])) {
@@ -196,6 +214,13 @@ class core_user_external extends external_api {
                     $user["profile_field_".$customfield['type']] = $customfield['value'];
                 }
                 profile_save_data((object) $user);
+            }
+
+            if ($createpassword) {
+                $userobject = (object)$user;
+                setnew_password_and_mail($userobject);
+                unset_user_preference('create_password', $userobject);
+                set_user_preference('auth_forcepasswordchange', 1, $userobject);
             }
 
             // Trigger event.
@@ -1239,6 +1264,185 @@ class core_user_external extends external_api {
             array(
                 'removed' => new external_value(PARAM_BOOL, 'True if removed, false if not removed because it doesn\'t exists'),
                 'warnings' => new external_warnings(),
+            )
+        );
+    }
+
+    /**
+     * Returns description of method parameters
+     *
+     * @return external_function_parameters
+     * @since Moodle 2.9
+     */
+    public static function view_user_list_parameters() {
+        return new external_function_parameters(
+            array(
+                'courseid' => new external_value(PARAM_INT, 'id of the course, 0 for site')
+            )
+        );
+    }
+
+    /**
+     * Trigger the user_list_viewed event.
+     *
+     * @param int $courseid id of course
+     * @return array of warnings and status result
+     * @since Moodle 2.9
+     * @throws moodle_exception
+     */
+    public static function view_user_list($courseid) {
+        global $CFG;
+        require_once($CFG->dirroot . "/user/lib.php");
+
+        $params = self::validate_parameters(self::view_user_list_parameters(),
+                                            array(
+                                                'courseid' => $courseid
+                                            ));
+
+        $warnings = array();
+
+        if (empty($params['courseid'])) {
+            $params['courseid'] = SITEID;
+        }
+
+        $course = get_course($params['courseid']);
+
+        if ($course->id == SITEID) {
+            $context = context_system::instance();
+        } else {
+            $context = context_course::instance($course->id);
+        }
+        self::validate_context($context);
+
+        if ($course->id == SITEID) {
+            require_capability('moodle/site:viewparticipants', $context);
+        } else {
+            require_capability('moodle/course:viewparticipants', $context);
+        }
+
+        user_list_view($course, $context);
+
+        $result = array();
+        $result['status'] = true;
+        $result['warnings'] = $warnings;
+        return $result;
+    }
+
+    /**
+     * Returns description of method result value
+     *
+     * @return external_description
+     * @since Moodle 2.9
+     */
+    public static function view_user_list_returns() {
+        return new external_single_structure(
+            array(
+                'status' => new external_value(PARAM_BOOL, 'status: true if success'),
+                'warnings' => new external_warnings()
+            )
+        );
+    }
+
+    /**
+     * Returns description of method parameters
+     *
+     * @return external_function_parameters
+     * @since Moodle 2.9
+     */
+    public static function view_user_profile_parameters() {
+        return new external_function_parameters(
+            array(
+                'userid' => new external_value(PARAM_INT, 'id of the user, 0 for current user', VALUE_REQUIRED),
+                'courseid' => new external_value(PARAM_INT, 'id of the course, default site course', VALUE_DEFAULT, 0)
+            )
+        );
+    }
+
+    /**
+     * Trigger the user profile viewed event.
+     *
+     * @param int $userid id of user
+     * @param int $courseid id of course
+     * @return array of warnings and status result
+     * @since Moodle 2.9
+     * @throws moodle_exception
+     */
+    public static function view_user_profile($userid, $courseid = 0) {
+        global $CFG, $USER;
+        require_once($CFG->dirroot . "/user/profile/lib.php");
+
+        $params = self::validate_parameters(self::view_user_profile_parameters(),
+                                            array(
+                                                'userid' => $userid,
+                                                'courseid' => $courseid
+                                            ));
+
+        $warnings = array();
+
+        if (empty($params['userid'])) {
+            $params['userid'] = $USER->id;
+        }
+
+        if (empty($params['courseid'])) {
+            $params['courseid'] = SITEID;
+        }
+
+        $course = get_course($params['courseid']);
+        $user = core_user::get_user($params['userid'], '*', MUST_EXIST);
+
+        if ($user->deleted) {
+            throw new moodle_exception('userdeleted');
+        }
+        if (isguestuser($user)) {
+            // Can not view profile of guest - thre is nothing to see there.
+            throw new moodle_exception('invaliduserid');
+        }
+
+        if ($course->id == SITEID) {
+            $coursecontext = context_system::instance();;
+        } else {
+            $coursecontext = context_course::instance($course->id);
+        }
+        self::validate_context($coursecontext);
+
+        $currentuser = $USER->id == $user->id;
+        $usercontext = context_user::instance($user->id);
+
+        if (!$currentuser and
+                !has_capability('moodle/user:viewdetails', $coursecontext) and
+                !has_capability('moodle/user:viewdetails', $usercontext)) {
+            throw new moodle_exception('cannotviewprofile');
+        }
+
+        // Case like user/profile.php.
+        if ($course->id == SITEID) {
+            profile_view($user, $usercontext);
+        } else {
+            // Case like user/view.php.
+            if (!$currentuser and !is_enrolled($coursecontext, $user->id)) {
+                throw new moodle_exception('notenrolledprofile');
+            }
+
+            profile_view($user, $coursecontext, $course);
+        }
+
+        $result = array();
+        $result['status'] = true;
+        $result['warnings'] = $warnings;
+        return $result;
+    }
+
+    /**
+     * Returns description of method result value
+     *
+     * @return external_description
+     * @since Moodle 2.9
+     */
+    public static function view_user_profile_returns() {
+        return new external_single_structure(
+            array(
+                'status' => new external_value(PARAM_BOOL, 'status: true if success'),
+                'warnings' => new external_warnings()
             )
         );
     }

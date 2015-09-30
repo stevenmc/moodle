@@ -56,16 +56,6 @@ class external extends external_api {
     }
 
     /**
-     * Can this function be called directly from ajax?
-     *
-     * @return boolean
-     * @since Moodle 2.9
-     */
-    public static function load_template_is_allowed_from_ajax() {
-        return true;
-    }
-
-    /**
      * Return a mustache template, and all the strings it requires.
      *
      * @param string $component The component that holds the template.
@@ -85,38 +75,11 @@ class external extends external_api {
         $template = $params['template'];
         $themename = $params['themename'];
 
-        // Check if this is a valid component.
-        $componentdir = core_component::get_component_directory($component);
-        if (empty($componentdir)) {
-            throw new moodle_exception('filenotfound', 'error');
-        }
-        // Places to look.
-        $candidates = array();
-        // Theme dir.
-        $root = $CFG->dirroot;
+        $templatename = $component . '/' . $template;
 
-        $themeconfig = theme_config::load($themename);
-
-        $candidate = "${root}/theme/${themename}/templates/${component}/${template}.mustache";
-        $candidates[] = $candidate;
-        // Theme parents dir.
-        foreach ($themeconfig->parents as $theme) {
-            $candidate = "${root}/theme/${theme}/templates/${component}/${template}.mustache";
-            $candidates[] = $candidate;
-        }
-        // Component dir.
-        $candidate = "${componentdir}/templates/${template}.mustache";
-        $candidates[] = $candidate;
-        $templatestr = false;
-        foreach ($candidates as $candidate) {
-            if (file_exists($candidate)) {
-                $templatestr = file_get_contents($candidate);
-                break;
-            }
-        }
-        if ($templatestr === false) {
-            throw new moodle_exception('filenotfound', 'error');
-        }
+        // Will throw exceptions if the template does not exist.
+        $filename = mustache_template_finder::get_template_filepath($templatename, $themename);
+        $templatestr = file_get_contents($filename);
 
         return $templatestr;
     }

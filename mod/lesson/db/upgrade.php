@@ -232,5 +232,122 @@ function xmldb_lesson_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2015031500, 'lesson');
     }
 
+    if ($oldversion < 2015032600) {
+
+        // Change practice lesson to allow multiple attempts
+        // so that behaviour is not changed by MDL-18966.
+        $DB->set_field('lesson', 'retake', 1, array('practice' => 1));
+
+        // Lesson savepoint reached.
+        upgrade_mod_savepoint(true, 2015032600, 'lesson');
+    }
+
+    if ($oldversion < 2015032700) {
+        // Delete any orphaned lesson_branch record.
+        if ($DB->get_dbfamily() === 'mysql') {
+            $sql = "DELETE {lesson_branch}
+                      FROM {lesson_branch}
+                 LEFT JOIN {lesson_pages}
+                        ON {lesson_branch}.pageid = {lesson_pages}.id
+                     WHERE {lesson_pages}.id IS NULL";
+        } else {
+            $sql = "DELETE FROM {lesson_branch}
+               WHERE NOT EXISTS (
+                         SELECT 'x' FROM {lesson_pages}
+                          WHERE {lesson_branch}.pageid = {lesson_pages}.id)";
+        }
+
+        $DB->execute($sql);
+
+        // Lesson savepoint reached.
+        upgrade_mod_savepoint(true, 2015032700, 'lesson');
+    }
+
+    if ($oldversion < 2015033100) {
+
+        // Define table lesson_overrides to be created.
+        $table = new xmldb_table('lesson_overrides');
+
+        // Adding fields to table lesson_overrides.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('lessonid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('groupid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('available', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('deadline', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('timelimit', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('review', XMLDB_TYPE_INTEGER, '3', null, null, null, null);
+        $table->add_field('maxattempts', XMLDB_TYPE_INTEGER, '3', null, null, null, null);
+        $table->add_field('retake', XMLDB_TYPE_INTEGER, '3', null, null, null, null);
+        $table->add_field('password', XMLDB_TYPE_CHAR, '32', null, null, null, null);
+
+        // Adding keys to table lesson_overrides.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $table->add_key('lessonid', XMLDB_KEY_FOREIGN, array('lessonid'), 'lesson', array('id'));
+        $table->add_key('groupid', XMLDB_KEY_FOREIGN, array('groupid'), 'groups', array('id'));
+        $table->add_key('userid', XMLDB_KEY_FOREIGN, array('userid'), 'user', array('id'));
+
+        // Conditionally launch create table for lesson_overrides.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Lesson savepoint reached.
+        upgrade_mod_savepoint(true, 2015033100, 'lesson');
+    }
+
+    // Moodle v2.9.0 release upgrade line.
+    // Put any upgrade step following this.
+
+    if ($oldversion < 2015071800) {
+
+        // Define table lesson_high_scores to be dropped.
+        $table = new xmldb_table('lesson_high_scores');
+
+        // Conditionally launch drop table for lesson_high_scores.
+        if ($dbman->table_exists($table)) {
+            $dbman->drop_table($table);
+        }
+
+        // Lesson savepoint reached.
+        upgrade_mod_savepoint(true, 2015071800, 'lesson');
+    }
+
+    if ($oldversion < 2015071801) {
+
+        // Define field highscores to be dropped from lesson.
+        $table = new xmldb_table('lesson');
+        $field = new xmldb_field('highscores');
+
+        // Conditionally launch drop field highscores.
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        // Lesson savepoint reached.
+        upgrade_mod_savepoint(true, 2015071801, 'lesson');
+    }
+
+    if ($oldversion < 2015071802) {
+
+        // Define field maxhighscores to be dropped from lesson.
+        $table = new xmldb_table('lesson');
+        $field = new xmldb_field('maxhighscores');
+
+        // Conditionally launch drop field maxhighscores.
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+
+        // Lesson savepoint reached.
+        upgrade_mod_savepoint(true, 2015071802, 'lesson');
+    }
+
+    if ($oldversion < 2015071803) {
+        unset_config('lesson_maxhighscores');
+
+        // Lesson savepoint reached.
+        upgrade_mod_savepoint(true, 2015071803, 'lesson');
+    }
     return true;
 }
