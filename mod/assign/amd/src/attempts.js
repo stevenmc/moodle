@@ -12,42 +12,111 @@
 define(['jquery', 'core/templates'], function($, templates) {
 
     var SELECTORS = {
+        FIELD: "#id_attemptpenalties",
+        MAINDIV: "",
         PENALTIES_GRID: "#mod_assign_form_attemptpenalties",
-        ADDPENALTY: "span.addpenalty",
-        REMOVEPENALTY: "span.removepenalty",
-        PENALTYITEM:"li.attemptpenalty"
+        ADDPENALTY: "div.addpenalty",
+        REMOVEPENALTY: "div.removepenalty",
+        PENALTYITEM:"li.attemptpenalty",
+        ATTEMPTSREOPENED:"#id_attemptreopenmethod",
+        MAXATTEMPTS:"#id_maxattempts"
     };
 
     var handleRemove = function(e) {
         window.console.log("Removing Penalty ");
         window.console.log(e);
         $(e.target).parent().remove();
+        checkPenaltyState();
     };
 
     var handleAdd = function() {
         window.console.log("Adding penalty");
+        if (!checkPenaltyState()) {
+            window.console.log("Cannot add new penalty");
+            return;
+        }
         var cExistingPenalties = $(SELECTORS.PENALTYITEM).size();
         window.console.log(cExistingPenalties + " already");
         var newItemData = {
-            penalty: ''
+            penalty: '0'
         };
         var newItem = templates.render('mod_assign/attemptpenalty', newItemData);
         newItem.done(function(source) {
             $(SELECTORS.PENALTIES_GRID).append(
                 source
             );
+            checkPenaltyState();
         });
         newItem.fail(function() {
-
         });
+    };
+    var checkPenaltyState = function() {
+        window.console.log("Checking state of Penalties");
+        if(!allowAdd()) {
+            $(SELECTORS.ADDPENALTY).addClass('disabled');
+            return false;
+        } else {
+            $(SELECTORS.ADDPENALTY).removeClass('disabled');
+            return true;
+        }
+    };
+    /**
+     * Check if the add button should still be enabled or not
+     */
+    var allowAdd = function() {
+        var attemptsReopened = $(SELECTORS.ATTEMPTSREOPENED +" option:selected").val();
+        window.console.log(attemptsReopened);
+        if (attemptsReopened == 'none') {
+            return false;
+        }
+        var cExistingPenalties = $(SELECTORS.PENALTYITEM).size();
+        var maxAttempts = $(SELECTORS.MAXATTEMPTS + " option:selected").val();
+        window.console.log(maxAttempts);
+        if (maxAttempts == -1) {
+            return true;
+        } else {
+            if (cExistingPenalties < maxAttempts) {
+                return true;
+            }
+            if (cExistingPenalties > maxAttempts) {
+                window.console.log("TODO Remove penalties beyond the end of the number of attempts");
+                
+            }
+        }
+        return false;
     };
 
     return {
         initialize : function(){
             window.console.log("hello");
             var body = $('body');
-            body.delegate(SELECTORS.REMOVEPENALTY, 'click', handleRemove);
-            body.delegate(SELECTORS.ADDPENALTY, 'click', handleAdd);
+            this.field = $(SELECTORS.FIELD);
+            window.console.log(this.field);
+            this.field.hide();
+            var mainDivPromise = templates.render('mod_assign/attemptpenalties',[]);
+            var me = this;
+            mainDivPromise.done(function(source) {
+                window.console.log(source);
+                me.field.after(source);
+                me.mainDiv = $(SELECTORS.PENALTIES_GRID);
+
+                var value = me.field.val();
+                window.console.log('Penalties values'+ value);
+                var data = null;
+                if (value !== '') {
+                    try {
+                        data = $.parseJSON(value);
+                    }
+                    catch(x) {
+                        me.field.val('');
+                    }
+                }
+                checkPenaltyState();
+                body.delegate(SELECTORS.REMOVEPENALTY, 'click', handleRemove);
+                body.delegate(SELECTORS.ADDPENALTY, 'click', handleAdd);
+                body.delegate(SELECTORS.ATTEMPTSREOPENED,'change', checkPenaltyState);
+                body.delegate(SELECTORS.MAXATTEMPTS,'change', checkPenaltyState);
+            });
         }
     };
 });

@@ -103,7 +103,7 @@ class mod_assign_mod_form extends moodleform_mod {
         $assignment->add_all_plugin_settings($mform);
 
         $mform->addElement('header', 'submissionsettings', get_string('submissionsettings', 'assign'));
-
+$mform->setExpanded('submissionsettings', true);
         $name = get_string('submissiondrafts', 'assign');
         $mform->addElement('selectyesno', 'submissiondrafts', $name);
         $mform->addHelpButton('submissiondrafts', 'submissiondrafts', 'assign');
@@ -134,15 +134,14 @@ class mod_assign_mod_form extends moodleform_mod {
 */
         $penaltydata = array(
             'penalties' => array(
-                array('penalty' => '0'),
-                array('penalty' => '50'),
-                array('penalty' => '100'),
             )
         );
-        $o = $OUTPUT->render_from_template('mod_assign/attemptpenalties', $penaltydata);
+        //$o = $OUTPUT->render_from_template('mod_assign/attemptpenalties', $penaltydata);
 //"<div id='mod_assign_form_attemptpenalties'>Penalties</div>"
-        $mform->addElement('static','attemptpenalties', get_string('attemptpenalty', 'assign'),$o);
-
+        //$mform->addElement('static','attemptpenaltiesui', get_string('attemptpenalty', 'assign'),$o);
+        $penaltyvalues = json_encode($penaltydata['penalties']);
+        $mform->addElement('textarea', 'attemptpenalties', get_string('attemptpenalty', 'assign'));
+        //$mform->setDefault($penaltyvalues);
         $mform->addElement('header', 'groupsubmissionsettings', get_string('groupsubmissionsettings', 'assign'));
 
         $name = get_string('teamsubmission', 'assign');
