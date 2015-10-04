@@ -25,7 +25,20 @@ define(['jquery', 'core/templates'], function($, templates) {
     var handleRemove = function(e) {
         window.console.log("Removing Penalty ");
         window.console.log(e);
-        $(e.target).parent().remove();
+
+        var penaltyItemTarget = $(e.target).parent().parent();
+        window.console.log(penaltyItemTarget);
+        penaltyItemTarget.remove();
+        var cExistingPenalties = $(SELECTORS.PENALTIES_GRID).children().size();
+        window.console.log(cExistingPenalties);
+        if (cExistingPenalties === 0) {
+            window.console.log("No Penalties Remain in effect");
+            var newItem = templates.render('mod_assign/nopenaltiesitem');
+            newItem.done(function(source) {
+                $(SELECTORS.PENALTIES_GRID).empty();
+                $(SELECTORS.PENALTIES_GRID).append(source);
+            });
+        }
         checkPenaltyState();
     };
 
@@ -42,6 +55,10 @@ define(['jquery', 'core/templates'], function($, templates) {
         };
         var newItem = templates.render('mod_assign/attemptpenalty', newItemData);
         newItem.done(function(source) {
+            //check if empty
+            if (cExistingPenalties === 0) {
+                $(SELECTORS.PENALTIES_GRID).empty();
+            }
             $(SELECTORS.PENALTIES_GRID).append(
                 source
             );
@@ -59,6 +76,18 @@ define(['jquery', 'core/templates'], function($, templates) {
             $(SELECTORS.ADDPENALTY).removeClass('disabled');
             return true;
         }
+    };
+
+    var attemptsReopenedChanged = function(e) {
+        window.console.log("Attempts Re-opened Changed");
+        window.console.log(e);
+        checkPenaltyState();
+    };
+    var maxAttemptsChanged = function(e) {
+        window.console.log("Max Attempts Changed");
+        window.console.log(e);
+        checkPenaltyState();
+
     };
     /**
      * Check if the add button should still be enabled or not
@@ -80,7 +109,7 @@ define(['jquery', 'core/templates'], function($, templates) {
             }
             if (cExistingPenalties > maxAttempts) {
                 window.console.log("TODO Remove penalties beyond the end of the number of attempts");
-                
+
             }
         }
         return false;
@@ -112,10 +141,14 @@ define(['jquery', 'core/templates'], function($, templates) {
                     }
                 }
                 checkPenaltyState();
-                body.delegate(SELECTORS.REMOVEPENALTY, 'click', handleRemove);
-                body.delegate(SELECTORS.ADDPENALTY, 'click', handleAdd);
-                body.delegate(SELECTORS.ATTEMPTSREOPENED,'change', checkPenaltyState);
-                body.delegate(SELECTORS.MAXATTEMPTS,'change', checkPenaltyState);
+                //body.delegate(SELECTORS.REMOVEPENALTY, 'click', handleRemove);
+                body.on('click', SELECTORS.REMOVEPENALTY, handleRemove);
+                //body.delegate(SELECTORS.ADDPENALTY, 'click', handleAdd);
+                body.on('click', SELECTORS.ADDPENALTY, handleAdd);
+                //body.delegate(SELECTORS.ATTEMPTSREOPENED,'change', attemptsReopenedChanged);
+                body.on('change', SELECTORS.ATTEMPTSREOPENED, attemptsReopenedChanged);
+                //body.delegate(SELECTORS.MAXATTEMPTS,'change', maxAttemptsChanged);
+                body.on('change', SELECTORS.MAXATTEMPTS, maxAttemptsChanged);
             });
         }
     };

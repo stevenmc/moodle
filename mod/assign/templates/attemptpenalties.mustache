@@ -3,5 +3,9 @@
     {{< mod_assign/attemptpenalty}}
     {{/mod_assign/attemptpenalty}}
 {{/penalties}}
+{{^penalties}}
+    {{<mod_assign/nopenaltiesitem}}
+    {{/mod_assign/nopenaltiesitem}}
+{{/penalties}}
 </ol>
 <div value="Add" class="btn addpenalty disabled">Add</div>
