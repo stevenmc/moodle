@@ -27,6 +27,13 @@ module.exports = function(grunt) {
         fs = require('fs'),
         tasks = {},
         cwd = process.env.PWD || process.cwd();
+    var dir = grunt.option('dir') || '';
+
+    if (dir != '') {
+      var newcwd = path.resolve(dir);
+      grunt.log.ok('Overriding current working directory '+ cwd + ' to ' +newcwd);
+      cwd = newcwd;
+    }
 
     // Project configuration.
     grunt.initConfig({
@@ -197,12 +204,13 @@ module.exports = function(grunt) {
                     } else {
                         grunt.log.ok('No YUI modules to build.');
                         done();
-                    }
+                    }7
                 });
             }
     };
 
     tasks.startup = function() {
+
         // Are we in a YUI directory?
         if (path.basename(path.resolve(cwd, '../../')) == 'yui') {
             grunt.task.run('shifter');
@@ -217,7 +225,7 @@ module.exports = function(grunt) {
             grunt.task.run('uglify');
         }
     };
-
+    grunt.log.debug("CWD: "+ cwd);
 
     // Register NPM tasks.
     grunt.loadNpmTasks('grunt-contrib-uglify');
