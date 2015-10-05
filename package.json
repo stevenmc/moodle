@@ -1,5 +1,6 @@
 {
-    "name": "Moodle",
+    "name": "moodle",
+    "version": "3.0.0",
     "private": true,
     "description": "Moodle",
     "devDependencies": {
