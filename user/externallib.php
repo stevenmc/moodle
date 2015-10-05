@@ -1389,14 +1389,7 @@ class core_user_external extends external_api {
 
         $course = get_course($params['courseid']);
         $user = core_user::get_user($params['userid'], '*', MUST_EXIST);
-
-        if ($user->deleted) {
-            throw new moodle_exception('userdeleted');
-        }
-        if (isguestuser($user)) {
-            // Can not view profile of guest - thre is nothing to see there.
-            throw new moodle_exception('invaliduserid');
-        }
+        core_user::require_active_user($user);
 
         if ($course->id == SITEID) {
             $coursecontext = context_system::instance();;
@@ -1419,7 +1412,7 @@ class core_user_external extends external_api {
             profile_view($user, $usercontext);
         } else {
             // Case like user/view.php.
-            if (!$currentuser and !is_enrolled($coursecontext, $user->id)) {
+            if (!$currentuser and !can_access_course($course, $user, '', true)) {
                 throw new moodle_exception('notenrolledprofile');
             }
 
