@@ -10,7 +10,7 @@
   */
 
 define(['jquery', 'core/templates'], function($, templates) {
-
+    //$.noConflict(true);
     var SELECTORS = {
         FIELD: "#id_attemptpenalties",
         MAINDIV: "",
@@ -18,7 +18,7 @@ define(['jquery', 'core/templates'], function($, templates) {
         ADDPENALTY: "div.addpenalty",
         REMOVEPENALTY: "div.removepenalty",
         PENALTYITEM:"li.attemptpenalty",
-        PENALTYITEMVALUE: "li.attemptpenalty input[type='text'] .penaltyvalue",
+        PENALTYITEMVALUE: "input[type='text'].penaltyvalue",
         ATTEMPTSREOPENED:"#id_attemptreopenmethod",
         MAXATTEMPTS:"#id_maxattempts"
     };
@@ -45,6 +45,15 @@ define(['jquery', 'core/templates'], function($, templates) {
             });
         }
         checkPenaltyState();
+    };
+    var testDump = function() {
+        window.console.log(penalties);
+        var penaltyitems = $(SELECTORS.PENALTYITEMVALUE);
+        window.console.log(penaltyitems);
+        penaltyitems.each(function(n, i) {
+            window.console.log(n);
+            window.console.log(i);
+        });
     };
 
     var handleAdd = function() {
@@ -77,7 +86,7 @@ define(['jquery', 'core/templates'], function($, templates) {
     var updatePenaltyValue = function(e) {
         window.console.log("Penalty Value Changed");
         window.console.log(e);
-    }
+    };
 
     var checkPenaltyState = function() {
         window.console.log("Checking state of Penalties");
@@ -158,6 +167,7 @@ define(['jquery', 'core/templates'], function($, templates) {
                 body.on('click', SELECTORS.REMOVEPENALTY, handleRemove);
                 //body.delegate(SELECTORS.ADDPENALTY, 'click', handleAdd);
                 body.on('click', SELECTORS.ADDPENALTY, handleAdd);
+                body.on('click', '#test', testDump);
                 //body.delegate(SELECTORS.ATTEMPTSREOPENED,'change', attemptsReopenedChanged);
                 body.on('change', SELECTORS.ATTEMPTSREOPENED, attemptsReopenedChanged);
                 //body.delegate(SELECTORS.MAXATTEMPTS,'change', maxAttemptsChanged);
