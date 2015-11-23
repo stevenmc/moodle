@@ -3307,6 +3307,7 @@ class assign {
             $revealidentitiesurl = '/mod/assign/view.php?id=' . $cmid . '&action=revealidentities';
             $links[$revealidentitiesurl] = get_string('revealidentities', 'assign');
         }
+
         foreach ($this->get_feedback_plugins() as $plugin) {
             if ($plugin->is_enabled() && $plugin->is_visible()) {
                 foreach ($plugin->get_grading_actions() as $action => $description) {
@@ -3397,6 +3398,7 @@ class assign {
                                                                                    '',
                                                                                    $classoptions);
 
+
         $gradingoptionsdata = new stdClass();
         $gradingoptionsdata->perpage = $perpage;
         $gradingoptionsdata->filter = $filter;
@@ -3425,7 +3427,10 @@ class assign {
             require_once($CFG->libdir . '/plagiarismlib.php');
             $o .= plagiarism_update_status($this->get_course(), $this->get_course_module());
         }
-
+        if ($this->is_blind_marking() & has_capability('mod/assign:viewblinddetails', $this->get_context())) {
+            $warning = new \mod_assign\renderable\blindmarkingwarning();
+            $o .= $this->get_renderer()->render($warning);
+        }
         // Load and print the table of submissions.
         if ($showquickgrading && $quickgrading) {
             $gradingtable = new assign_grading_table($this, $perpage, $filter, 0, true);

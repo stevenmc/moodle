@@ -993,7 +993,14 @@ class mod_assign_renderer extends plugin_renderer_base {
 
         return $o;
     }
-
+    /**
+     * Render a warning that blind making is enabled
+     * @param blindmarkingwarning $warning
+     */
+    public function render_blindmarkingwarning(\mod_assign\renderable\blindmarkingwarning $warning) {
+        $o = $this->output->notification($warning->string, 'notifymessage');
+        return $o;
+    }
     /**
      * Render the grading table.
      *
