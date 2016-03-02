@@ -1417,6 +1417,11 @@ class assign {
         if (empty($update->markingworkflow)) { // If marking workflow is disabled, make sure allocation is disabled.
             $update->markingallocation = 0;
         }
+        if (empty($formdata->attemptpenalties)) {
+            $update->attemptpenalties = "[]";
+        } else {
+            $update->attemptpenalties = $formdata->attemptpenalties;
+        }
 
         $result = $DB->update_record('assign', $update);
         $this->instance = $DB->get_record('assign', array('id'=>$update->id), '*', MUST_EXIST);
@@ -1781,6 +1786,9 @@ class assign {
                     if ($item->get_displaytype() == GRADE_DISPLAY_TYPE_REAL) {
                         // If displaying the raw grade, also display the total value.
                         $o .= '&nbsp;/&nbsp;' . format_float($this->get_instance()->grade, $item->get_decimals());
+                    }
+                    if ($penaltymultiplier != 1) {
+                        $o .= html_writer::tag('div', "(".(1 - $penaltymultiplier) * 100 . "% penalty applied to final grade)");
                     }
                 }
                 return $o;
@@ -2616,6 +2624,12 @@ class assign {
         if (empty($grade->attemptnumber)) {
             // Set it to the default.
             $grade->attemptnumber = 0;
+        }
+
+        if (empty($grade->attemptpenalty)) {
+            // Set it to the default.
+            $grade->attemptpenalty = 1; // no penalty.
+            exit('err');
         }
         $DB->update_record('assign_grades', $grade);
 
@@ -5421,8 +5435,10 @@ class assign {
      */
     protected function convert_grade_for_gradebook(stdClass $grade) {
         $gradebookgrade = array();
+
         if ($grade->grade >= 0) {
-            $gradebookgrade['rawgrade'] = $grade->grade;
+            // Apply Penalty to assign_grade fro storing in gradebook.
+            $gradebookgrade['rawgrade'] = $grade->grade * $grade->attemptpenalty;
         }
         // Allow "no grade" to be chosen.
         if ($grade->grade == -1) {
@@ -7315,7 +7331,25 @@ class assign {
                 }
             }
         }
-
+        if (true) {
+            $mform->addElement('text', 'attemptpenalty', get_string('attemptpenalty', 'assign'));
+            $mform->setDefault('attemptpenalty', 0);
+            // Normally <0 == first attempt, 1= 2nd attempt, 2 = 3rd attempt.
+            $submissionattempt = $submission->attemptnumber;
+            $penalties = json_decode($settings->attemptpenalties);
+            if (!empty($penalties)) {
+                $optpenalties = array(0 => "Attempt 1: 0% (no penalty)");
+                foreach ($penalties as $index => $p) {
+                    $attemptno = $index + 2;
+                    $optpenalties[$p] = "Attempt {$attemptno}: {$p}% penalty";
+                }
+                $mform->addElement('select', 'attemptpenalty', get_string('attemptpenalty', 'assign'), $optpenalties);
+                if ($submissionattempt > 0) {
+                    $mform->setDefault('attemptpenalty', $penalties[$submissionattempt - 1]);
+                    // Need to subtract one as $penalties is only for attempts 2 or later.
+                }
+            }
+        }
         $gradinginfo = grade_get_grades($this->get_course()->id,
                                         'mod',
                                         'assign',
@@ -7449,6 +7483,7 @@ class assign {
                 $mform->addElement('selectyesno', 'addattempt', get_string('addattempt', 'assign'));
                 $mform->setDefault('addattempt', 0);
             }
+
         }
         if (!$gradingpanel) {
             $mform->addElement('selectyesno', 'sendstudentnotifications', get_string('sendstudentnotifications', 'assign'));
@@ -7972,6 +8007,14 @@ class assign {
                 ($originalgrade !== null && $originalgrade != -1) ||
                 ($grade->grade !== null && $grade->grade != -1) ||
                 $feedbackmodified) {
+            // Incorporate attempt penalty.
+            $settings = $this->get_instance();
+            $penalties = json_decode($settings->attemptpenalties);
+            $penalty = $formdata->attemptpenalty; // As integer.
+            if (is_numeric($penalty)) {
+                $penalty = (100 - $penalty) / 100; // Convert to float.
+                $grade->attemptpenalty = $penalty;
+            }
             $this->update_grade($grade, !empty($formdata->addattempt));
         }
 

@@ -974,7 +974,7 @@ class assign_grading_table extends table_sql implements renderable {
 
         $grade = $this->get_gradebook_data_for_user($row->userid);
         if ($grade) {
-            $o = $this->display_grade($grade->grade, false, $row->userid, $row->timemarked);
+            $o = $this->display_grade($grade->grade, false, $row->userid, $row->timemarked, 1);
         }
 
         return $o;
@@ -1289,8 +1289,8 @@ class assign_grading_table extends table_sql implements renderable {
         if ($row->status == ASSIGN_SUBMISSION_STATUS_SUBMITTED &&
                 $this->assignment->get_instance()->submissiondrafts) {
             $urlparams = array('id' => $this->assignment->get_course_module()->id,
-                               'userid'=>$row->id,
-                               'action'=>'reverttodraft',
+                               'userid' => $row->id,
+                               'action' => 'reverttodraft',
                                'sesskey'=>sesskey(),
                                'page'=>$this->currpage);
             $url = new moodle_url('/mod/assign/view.php', $urlparams);

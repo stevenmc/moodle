@@ -42,7 +42,7 @@ class mod_assign_mod_form extends moodleform_mod {
      * @return void
      */
     public function definition() {
-        global $CFG, $COURSE, $DB, $PAGE;
+        global $CFG, $COURSE, $DB, $PAGE, $OUTPUT;
         $mform = $this->_form;
 
         $mform->addElement('header', 'general', get_string('general', 'form'));
@@ -107,7 +107,7 @@ class mod_assign_mod_form extends moodleform_mod {
         $assignment->add_all_plugin_settings($mform);
 
         $mform->addElement('header', 'submissionsettings', get_string('submissionsettings', 'assign'));
-
+        $mform->setExpanded('submissionsettings', true);
         $name = get_string('submissiondrafts', 'assign');
         $mform->addElement('selectyesno', 'submissiondrafts', $name);
         $mform->addHelpButton('submissiondrafts', 'submissiondrafts', 'assign');
@@ -133,6 +133,15 @@ class mod_assign_mod_form extends moodleform_mod {
         $mform->addHelpButton('maxattempts', 'maxattempts', 'assign');
         $mform->disabledIf('maxattempts', 'attemptreopenmethod', 'eq', ASSIGN_ATTEMPT_REOPEN_METHOD_NONE);
 
+        /*
+        Attempt penalty code
+        */
+        $penaltydata = array(
+            'penalties' => array(
+            )
+        );
+        $penaltyvalues = json_encode($penaltydata['penalties']);
+        $mform->addElement('textarea', 'attemptpenalties', get_string('attemptpenalty', 'assign'));
         $mform->addElement('header', 'groupsubmissionsettings', get_string('groupsubmissionsettings', 'assign'));
 
         $name = get_string('teamsubmission', 'assign');
@@ -213,6 +222,37 @@ class mod_assign_mod_form extends moodleform_mod {
         $this->apply_admin_defaults();
 
         $this->add_action_buttons();
+
+        // Add warning popup/noscript tag, if grades are changed by user.
+        $hasgrade = false;
+        if (!empty($this->_instance)) {
+            $hasgrade = $DB->record_exists_select('assign_grades',
+                                                  'assignment = ? AND grade <> -1',
+                                                  array($this->_instance));
+        }
+
+        if ($mform->elementExists('grade') && $hasgrade) {
+            $module = array(
+                'name' => 'mod_assign',
+                'fullpath' => '/mod/assign/module.js',
+                'requires' => array('node', 'event'),
+                'strings' => array(array('changegradewarning', 'mod_assign'))
+                );
+            $PAGE->requires->js_init_call('M.mod_assign.init_grade_change', null, false, $module);
+
+            // Add noscript tag in case.
+            $noscriptwarning = $mform->createElement('static',
+                                                     'warning',
+                                                     null,
+                                                     html_writer::tag('noscript',
+                                                     get_string('changegradewarning', 'mod_assign')));
+            $mform->insertElementBefore($noscriptwarning, 'grade');
+        }
+        if ($mform->elementExists('attemptpenalties')) {
+            $params = array();
+            $PAGE->requires->js_call_amd('mod_assign/attempts', 'initialize', $params);
+        }
+
     }
 
     /**

@@ -1,0 +1,12 @@
+<ol id='mod_assign_form_attemptpenalties'>
+{{#penalties}}
+    {{< mod_assign/attemptpenalty}}
+    {{/mod_assign/attemptpenalty}}
+{{/penalties}}
+{{^penalties}}
+    {{<mod_assign/nopenaltiesitem}}
+    {{/mod_assign/nopenaltiesitem}}
+{{/penalties}}
+</ol>
+<div value="Add" class="btn addpenalty disabled">Add</div>
+<div value='test' id='test' class='btn'>Test</div>
