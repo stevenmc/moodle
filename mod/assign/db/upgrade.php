@@ -179,7 +179,21 @@ function xmldb_assign_upgrade($oldversion) {
         }
 
         // Assign savepoint reached.
-        upgrade_mod_savepoint(true, 2017111301, 'assign');
+        upgrade_mod_savepoint(true, 2016021100, 'assign');
+    }
+    if ($oldversion < 2017111302) {
+
+        // Define field attemptpenalty to be added to assign_grades.
+        $table = new xmldb_table('assign_grades');
+        $field = new xmldb_field('attemptpenalty', XMLDB_TYPE_NUMBER, '3', null, XMLDB_NOTNULL, null, '0', 'attemptnumber');
+
+        // Conditionally launch add field attemptpenalty.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Assign savepoint reached.
+        upgrade_mod_savepoint(true, 2017111302, 'assign');
     }
 
     return true;
