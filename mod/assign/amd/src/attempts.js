@@ -33,7 +33,6 @@ define(['jquery', 'core/templates'], function($, templates) {
         handleSubmission();
         var cExistingPenalties = $(SELECTORS.PENALTIES_GRID).children().length;
         if (cExistingPenalties === 0) {
-
             var newItem = templates.render('mod_assign/nopenaltiesitem');
             newItem.done(function(source) {
                 $(SELECTORS.PENALTIES_GRID).empty();
@@ -114,7 +113,6 @@ define(['jquery', 'core/templates'], function($, templates) {
 
 
     var checkPenaltyState = function() {
-
         if(!allowAdd()) {
             $(SELECTORS.ADDPENALTY).addClass('disabled');
             return false;
@@ -169,12 +167,11 @@ define(['jquery', 'core/templates'], function($, templates) {
                     catch(x) {
                         me.field.val('');
                     }
-                    var cExistingPenalties = $(SELECTORS.PENALTYITEM).length;
+                    var cExistingPenalties = $(SELECTORS.PENALTYITEM).size();
                     var addPenaltyFunction = function(source) {
                         $(SELECTORS.PENALTIES_GRID).append(
                             source
                         );
-
                         checkPenaltyState();
                     };
                     $(SELECTORS.PENALTIES_GRID).empty();
@@ -184,6 +181,7 @@ define(['jquery', 'core/templates'], function($, templates) {
                         };
                         var newItem = templates.render('mod_assign/attemptpenalty', newItemData);
                         newItem.done(addPenaltyFunction);
+
                     }
                 }
                 checkPenaltyState();
@@ -197,12 +195,12 @@ define(['jquery', 'core/templates'], function($, templates) {
                 body.on('change', SELECTORS.MAXATTEMPTS, checkPenaltyState);
 
                 $(SELECTORS.PENALTIES_GRID).on('change', SELECTORS.PENALTYITEMVALUE, function() {
+                    window.console.log("Delegated change event");
                     handleSubmission();
                     checkPenaltyState();
                     }
                 );
                 //body.on('change', SELECTORS.PENALTYITEMVALUE, checkPenaltyState);
-
             });
         }
     };
