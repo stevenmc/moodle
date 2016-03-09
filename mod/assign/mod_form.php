@@ -42,7 +42,7 @@ class mod_assign_mod_form extends moodleform_mod {
      * @return void
      */
     public function definition() {
-        global $CFG, $COURSE, $DB, $PAGE, $OUTPUT;
+        global $CFG, $COURSE, $DB, $PAGE;
         $mform = $this->_form;
 
         $mform->addElement('header', 'general', get_string('general', 'form'));
@@ -107,7 +107,6 @@ class mod_assign_mod_form extends moodleform_mod {
         $assignment->add_all_plugin_settings($mform);
 
         $mform->addElement('header', 'submissionsettings', get_string('submissionsettings', 'assign'));
-        $mform->setExpanded('submissionsettings', true);
         $name = get_string('submissiondrafts', 'assign');
         $mform->addElement('selectyesno', 'submissiondrafts', $name);
         $mform->addHelpButton('submissiondrafts', 'submissiondrafts', 'assign');
@@ -248,11 +247,11 @@ class mod_assign_mod_form extends moodleform_mod {
                                                      get_string('changegradewarning', 'mod_assign')));
             $mform->insertElementBefore($noscriptwarning, 'grade');
         }
+
         if ($mform->elementExists('attemptpenalties')) {
             $params = array();
             $PAGE->requires->js_call_amd('mod_assign/attempts', 'initialize', $params);
         }
-
     }
 
     /**

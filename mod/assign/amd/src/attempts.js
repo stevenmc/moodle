@@ -28,16 +28,11 @@ define(['jquery', 'core/templates'], function($, templates) {
     var penalties = [];
 
     var handleRemove = function(e) {
-        window.console.log("Removing Penalty ");
-        window.console.log(e);
-
         var penaltyItemTarget = $(e.target).parent().parent();
-        window.console.log(penaltyItemTarget);
         penaltyItemTarget.remove();
+        handleSubmission();
         var cExistingPenalties = $(SELECTORS.PENALTIES_GRID).children().size();
-        window.console.log(cExistingPenalties);
         if (cExistingPenalties === 0) {
-            window.console.log("No Penalties Remain in effect");
             var newItem = templates.render('mod_assign/nopenaltiesitem');
             newItem.done(function(source) {
                 $(SELECTORS.PENALTIES_GRID).empty();
@@ -46,24 +41,13 @@ define(['jquery', 'core/templates'], function($, templates) {
         }
         checkPenaltyState();
     };
-    var testDump = function() {
-        window.console.log(penalties);
-        var penaltyitems = $(SELECTORS.PENALTYITEMVALUE);
-        window.console.log(penaltyitems);
-        penaltyitems.each(function(n, i) {
-            window.console.log(n);
-            window.console.log(i);
-        });
-    };
 
     var handleAdd = function() {
         window.console.log("Adding penalty");
         if (!checkPenaltyState()) {
-            window.console.log("Cannot add new penalty");
             return;
         }
         var cExistingPenalties = $(SELECTORS.PENALTYITEM).size();
-        window.console.log(cExistingPenalties + " already");
         var newItemData = {
             penalty: '0'
         };
@@ -76,35 +60,60 @@ define(['jquery', 'core/templates'], function($, templates) {
                 source
             );
             // Store the value in the data.
-            checkPenaltyState();
+            handleSubmission();
         });
         newItem.fail(function() {
+            handleSubmission();
         });
     };
 
     var handleSubmission = function() {
         var datafield = $(SELECTORS.FIELD);
-        window.console.log("Procesing form submit!");
         var existingPenalties = $(SELECTORS.PENALTYITEMVALUE);
+        //$(SELECTORS.PENALTIES_GRID).children().size();
         var cExistingPenalties = $(SELECTORS.PENALTYITEMVALUE).size();
-        window.console.log(existingPenalties);
-        window.console.log("Existing Penalties: " + cExistingPenalties);
         var penalties = [];
-        existingPenalties.each(function(index, value) {
-            window.console.log("Penalty " + index + ":" + $(value).val());
-            penalties.push( parseInt($(value).val()) );
-            window.console.log("Penalties " + JSON.stringify(penalties));
+        window.console.log(existingPenalties);
+        window.console.log("#penalty values: " +cExistingPenalties);
+        if (cExistingPenalties == 0 ) {
+            
             datafield.val(JSON.stringify(penalties));
-        });
+        } else {
+            var i = 0;
+            var isValid = true
+            $('.penaltyerror').remove();
+            existingPenalties.each(function(index, value) {
+                penaltyElement = $(value);
+                penaltyIsValid = true;
+                penalty = parseInt(penaltyElement.val());
+                if (isNaN(penalty)){
+                    penaltyIsValid = false;
+                    penaltyElement.after("<span class='penaltyerror'>Must between 0 - 100</span>");
+                } else {
+                    if (penalty < 0) {
+                        penaltyIsValid = false;
+                        penaltyElement.after("<span class='penaltyerror'>Must be > 0</span>");
+                    } else if (penalty > 100) {
+                        penaltyIsValid = false;
+                        penaltyElement.after("<span class='penaltyerror'>Must be <= 100</span>");
+                    }
+                }
+                
+                
+                isValid = isValid & penaltyIsValid;
+                if (isValid) {
+                    penalties.push(penalty);
+                }
+                if (i+1 == cExistingPenalties & isValid) {
+                    datafield.val(JSON.stringify(penalties));
+                }
+                i++;
+            });
+        }
     }
 
-    var updatePenaltyValue = function(e) {
-        window.console.log("Penalty Value Changed");
-        window.console.log(e);
-    };
 
     var checkPenaltyState = function() {
-        window.console.log("Checking state of Penalties");
         if(!allowAdd()) {
             $(SELECTORS.ADDPENALTY).addClass('disabled');
             return false;
@@ -114,23 +123,11 @@ define(['jquery', 'core/templates'], function($, templates) {
         }
     };
 
-    var attemptsReopenedChanged = function(e) {
-        window.console.log("Attempts Re-opened Changed");
-        window.console.log(e);
-        checkPenaltyState();
-    };
-    var maxAttemptsChanged = function(e) {
-        window.console.log("Max Attempts Changed");
-        window.console.log(e);
-        checkPenaltyState();
-
-    };
     /**
      * Check if the add button should still be enabled or not
      */
     var allowAdd = function() {
         var attemptsReopened = $(SELECTORS.ATTEMPTSREOPENED + " option:selected").val();
-        window.console.log(attemptsReopened);
         if (attemptsReopened == 'none') {
             return false;
         }
@@ -153,7 +150,6 @@ define(['jquery', 'core/templates'], function($, templates) {
 
     return {
         initialize : function(){
-            window.console.log("hello");
             var body = $('body');
             this.field = $(SELECTORS.FIELD);
             window.console.log(this.field);
@@ -162,12 +158,10 @@ define(['jquery', 'core/templates'], function($, templates) {
             var me = this;
 
             mainDivPromise.done(function(source) {
-                window.console.log(source);
                 me.field.after(source);
                 me.mainDiv = $(SELECTORS.PENALTIES_GRID);
 
                 var value = me.field.val();
-                window.console.log('Penalties values' + value);
                 var data = null;
                 if (value !== '') {
                     try {
@@ -176,21 +170,21 @@ define(['jquery', 'core/templates'], function($, templates) {
                     catch(x) {
                         me.field.val('');
                     }
-                    window.console.log(data);
                     var cExistingPenalties = $(SELECTORS.PENALTYITEM).size();
                     var addPenaltyFunction = function(source) {
                         $(SELECTORS.PENALTIES_GRID).append(
                             source
                         );
+                        checkPenaltyState();
                     };
                     $(SELECTORS.PENALTIES_GRID).empty();
                     for(var i = 0; i < data.length; i++) {
-                        window.console.log("Adding penaly " + i + " value:" + data[i]);
                         var newItemData = {
                             penalty: data[i]
                         };
                         var newItem = templates.render('mod_assign/attemptpenalty', newItemData);
                         newItem.done(addPenaltyFunction);
+
                     }
                 }
                 checkPenaltyState();
@@ -198,13 +192,18 @@ define(['jquery', 'core/templates'], function($, templates) {
                 body.on('click', SELECTORS.REMOVEPENALTY, handleRemove);
 
                 body.on('click', SELECTORS.ADDPENALTY, handleAdd);
-                body.on('click', '#test', testDump);
 
-                body.on('change', SELECTORS.ATTEMPTSREOPENED, attemptsReopenedChanged);
+                body.on('change', SELECTORS.ATTEMPTSREOPENED, checkPenaltyState);
 
-                body.on('change', SELECTORS.MAXATTEMPTS, maxAttemptsChanged);
+                body.on('change', SELECTORS.MAXATTEMPTS, checkPenaltyState);
 
-                body.on('change', SELECTORS.PENALTYITEMVALUE, updatePenaltyValue);
+                $(SELECTORS.PENALTIES_GRID).on('change', SELECTORS.PENALTYITEMVALUE, function() {
+                    window.console.log("Delegated change event");
+                    handleSubmission();
+                    checkPenaltyState();
+                    }
+                );
+                //body.on('change', SELECTORS.PENALTYITEMVALUE, checkPenaltyState);
             });
         }
     };
