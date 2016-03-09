@@ -7353,6 +7353,11 @@ class assign {
             }
         }
         if (true) {
+            $mform->addElement('text', 'attemptpenalty', get_string('attemptpenalty', 'assign'));
+            $mform->setType('attemptpenalty', PARAM_RAW);
+            $mform->setDefault('attemptpenalty', 0);
+            // Normally <0 == first attempt, 1= 2nd attempt, 2 = 3rd attempt.
+            $submissionattempt = $submission->attemptnumber;
             $penalties = json_decode($settings->attemptpenalties);
             //$mform->addElement("static",'sap', print_r($penalties, true));
             //$mform->addElement('text', 'attemptpenalty', get_string('attemptpenalty', 'assign'));

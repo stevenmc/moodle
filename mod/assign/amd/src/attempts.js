@@ -180,6 +180,7 @@ define(['jquery', 'core/templates'], function($, templates) {
                         };
                         var newItem = templates.render('mod_assign/attemptpenalty', newItemData);
                         newItem.done(addPenaltyFunction);
+
                     }
                 }
                 checkPenaltyState();
