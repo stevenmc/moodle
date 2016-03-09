@@ -31,14 +31,8 @@ define(['jquery', 'core/templates'], function($, templates) {
         var penaltyItemTarget = $(e.target).parent().parent();
         penaltyItemTarget.remove();
         handleSubmission();
-<<<<<<< 00ba47c219f449670a82262e4af5a3f590513494
-        var cExistingPenalties = $(SELECTORS.PENALTIES_GRID).children().length();
-        if (cExistingPenalties === 0) {
-
-=======
         var cExistingPenalties = $(SELECTORS.PENALTIES_GRID).children().size();
         if (cExistingPenalties === 0) {
->>>>>>> Fixed issues raised by HQ
             var newItem = templates.render('mod_assign/nopenaltiesitem');
             newItem.done(function(source) {
                 $(SELECTORS.PENALTIES_GRID).empty();
@@ -52,12 +46,8 @@ define(['jquery', 'core/templates'], function($, templates) {
         if (!checkPenaltyState()) {
             return;
         }
-<<<<<<< 00ba47c219f449670a82262e4af5a3f590513494
-        var cExistingPenalties = $(SELECTORS.PENALTYITEM).length;
 
-=======
         var cExistingPenalties = $(SELECTORS.PENALTYITEM).size();
->>>>>>> Fixed issues raised by HQ
         var newItemData = {
             penalty: '0'
         };
@@ -71,10 +61,7 @@ define(['jquery', 'core/templates'], function($, templates) {
             );
             // Store the value in the data.
             handleSubmission();
-<<<<<<< 00ba47c219f449670a82262e4af5a3f590513494
             checkPenaltyState();
-=======
->>>>>>> Fixed issues raised by HQ
         });
         newItem.fail(function() {
             handleSubmission();
@@ -84,17 +71,10 @@ define(['jquery', 'core/templates'], function($, templates) {
     var handleSubmission = function() {
         var datafield = $(SELECTORS.FIELD);
         var existingPenalties = $(SELECTORS.PENALTYITEMVALUE);
-<<<<<<< 00ba47c219f449670a82262e4af5a3f590513494
-        //$(SELECTORS.PENALTIES_GRID).children().length;
-        var cExistingPenalties = $(SELECTORS.PENALTYITEMVALUE).length;
-        var penalties = [];
-=======
-        //$(SELECTORS.PENALTIES_GRID).children().size();
         var cExistingPenalties = $(SELECTORS.PENALTYITEMVALUE).size();
         var penalties = [];
         window.console.log(existingPenalties);
         window.console.log("#penalty values: " +cExistingPenalties);
->>>>>>> Fixed issues raised by HQ
         if (cExistingPenalties == 0 ) {
             
             datafield.val(JSON.stringify(penalties));
@@ -134,10 +114,6 @@ define(['jquery', 'core/templates'], function($, templates) {
 
 
     var checkPenaltyState = function() {
-<<<<<<< 00ba47c219f449670a82262e4af5a3f590513494
-
-=======
->>>>>>> Fixed issues raised by HQ
         if(!allowAdd()) {
             $(SELECTORS.ADDPENALTY).addClass('disabled');
             return false;
