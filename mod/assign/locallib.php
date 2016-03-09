@@ -669,6 +669,13 @@ class assign {
         if (!empty($formdata->maxattempts)) {
             $update->maxattempts = $formdata->maxattempts;
         }
+
+        if (empty($formdata->attemptpenalties)) {
+            $update->attemptpenalties = "[]";
+        } else {
+            $update->attemptpenalties = $formdata->attemptpenalties;
+        }
+
         if (isset($formdata->preventsubmissionnotingroup)) {
             $update->preventsubmissionnotingroup = $formdata->preventsubmissionnotingroup;
         }
@@ -1750,7 +1757,7 @@ class assign {
      * @param int $modified Timestamp from when the grade was last modified
      * @return string User-friendly representation of grade
      */
-    public function display_grade($grade, $editing, $userid=0, $modified=0) {
+    public function display_grade($grade, $editing, $userid=0, $modified=0, $penaltymultiplier = 1) {
         global $DB;
 
         static $scalegrades = array();
@@ -1788,7 +1795,7 @@ class assign {
                         $o .= '&nbsp;/&nbsp;' . format_float($this->get_instance()->grade, $item->get_decimals());
                     }
                     if ($penaltymultiplier != 1) {
-                        $o .= html_writer::tag('div', "(".(1 - $penaltymultiplier) * 100 . "% penalty applied to final grade)");
+                        $o .= html_writer::tag('div', get_string('penaltyapplied', 'assign', (1 - $penaltymultiplier) * 10));
                     }
                 }
                 return $o;
@@ -4187,6 +4194,7 @@ class assign {
             $revealidentitiesurl = '/mod/assign/view.php?id=' . $cmid . '&action=revealidentities';
             $links[$revealidentitiesurl] = get_string('revealidentities', 'assign');
         }
+
         foreach ($this->get_feedback_plugins() as $plugin) {
             if ($plugin->is_enabled() && $plugin->is_visible()) {
                 foreach ($plugin->get_grading_actions() as $action => $description) {
@@ -5154,6 +5162,19 @@ class assign {
     public function view_student_summary($user, $showlinks) {
 
         $o = '';
+        var_dump($this->instance->attemptpenalties);
+        $teamsubmission = null;
+        $submissiongroup = null;
+        $notsubmitted = array();
+        if ($instance->teamsubmission) {
+            $teamsubmission = $this->get_group_submission($user->id, 0, false);
+            $submissiongroup = $this->get_submission_group($user->id);
+            $groupid = 0;
+            if ($submissiongroup) {
+                $groupid = $submissiongroup->id;
+            }
+            $notsubmitted = $this->get_submission_group_members_who_have_not_submitted($groupid, false);
+        }
 
         if ($this->can_view_submission($user->id)) {
 
@@ -7333,15 +7354,18 @@ class assign {
         }
         if (true) {
             $mform->addElement('text', 'attemptpenalty', get_string('attemptpenalty', 'assign'));
+            $mform->setType('attemptpenalty', PARAM_RAW);
             $mform->setDefault('attemptpenalty', 0);
             // Normally <0 == first attempt, 1= 2nd attempt, 2 = 3rd attempt.
             $submissionattempt = $submission->attemptnumber;
             $penalties = json_decode($settings->attemptpenalties);
             if (!empty($penalties)) {
-                $optpenalties = array(0 => "Attempt 1: 0% (no penalty)");
+                $optpenalties = array(0 => get_string('penaltyattempt', 'assign', $strparams));
                 foreach ($penalties as $index => $p) {
                     $attemptno = $index + 2;
-                    $optpenalties[$p] = "Attempt {$attemptno}: {$p}% penalty";
+                    $strparams = (object)array('attemptno' => $attemptno, 'penalty' => $p);
+
+                    $optpenalties[$p] = get_string('penaltyattempt', 'assign', $strparams);
                 }
                 $mform->addElement('select', 'attemptpenalty', get_string('attemptpenalty', 'assign'), $optpenalties);
                 if ($submissionattempt > 0) {
