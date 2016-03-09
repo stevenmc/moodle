@@ -142,7 +142,7 @@ class mod_assign_mod_form extends moodleform_mod {
         $penaltyvalues = json_encode($penaltydata['penalties']);
         $mform->addElement('textarea', 'attemptpenalties', get_string('attemptpenalty', 'assign'));
         $mform->addElement('header', 'groupsubmissionsettings', get_string('groupsubmissionsettings', 'assign'));
-
+        $mform->addHelpButton('attemptpenalties', 'attemptpenalty', 'assign');
         $name = get_string('teamsubmission', 'assign');
         $mform->addElement('selectyesno', 'teamsubmission', $name);
         $mform->addHelpButton('teamsubmission', 'teamsubmission', 'assign');
