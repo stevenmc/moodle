@@ -31,7 +31,7 @@ define(['jquery', 'core/templates'], function($, templates) {
         var penaltyItemTarget = $(e.target).parent().parent();
         penaltyItemTarget.remove();
         handleSubmission();
-        var cExistingPenalties = $(SELECTORS.PENALTIES_GRID).children().length();
+        var cExistingPenalties = $(SELECTORS.PENALTIES_GRID).children().length;
         if (cExistingPenalties === 0) {
             var newItem = templates.render('mod_assign/nopenaltiesitem');
             newItem.done(function(source) {
@@ -180,6 +180,7 @@ define(['jquery', 'core/templates'], function($, templates) {
                         };
                         var newItem = templates.render('mod_assign/attemptpenalty', newItemData);
                         newItem.done(addPenaltyFunction);
+
                     }
                 }
                 checkPenaltyState();
@@ -193,6 +194,10 @@ define(['jquery', 'core/templates'], function($, templates) {
                 body.on('change', SELECTORS.MAXATTEMPTS, checkPenaltyState);
 
                 $(SELECTORS.PENALTIES_GRID).on('change', SELECTORS.PENALTYITEMVALUE, function() {
+<<<<<<< HEAD
+=======
+                    window.console.log("Delegated change event");
+>>>>>>> Fixed issues raised by HQ
                     handleSubmission();
                     checkPenaltyState();
                     }
