@@ -61,6 +61,7 @@ define(['jquery', 'core/templates'], function($, templates) {
             );
             // Store the value in the data.
             handleSubmission();
+            checkPenaltyState();
         });
         newItem.fail(function() {
             handleSubmission();
