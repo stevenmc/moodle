@@ -23,6 +23,7 @@
  */
 
 $string['activityoverview'] = 'You have assignments that need attention';
+$string['addpenalty'] = 'Add Penalty';
 $string['addsubmission'] = 'Add submission';
 $string['addsubmission_help'] = 'You have not made a submission yet';
 $string['addattempt'] = 'Allow another attempt';
@@ -347,6 +348,7 @@ $string['none'] = 'None';
 $string['noonlinesubmissions'] = 'This assignment does not require you to submit anything online';
 $string['noopen'] = 'No open date';
 $string['nooverridedata'] = 'You must override at least one of the assignment settings.';
+$string['nopenalties'] = 'No Penalties for re-attempts';
 $string['nosavebutnext'] = 'Next';
 $string['nosubmission'] = 'Nothing has been submitted for this assignment';
 $string['nosubmissionsacceptedafter'] = 'No submissions accepted after ';
@@ -381,6 +383,9 @@ $string['page-mod-assign-x'] = 'Any assignment module page';
 $string['page-mod-assign-view'] = 'Assignment module main and submission page';
 $string['paramtimeremaining'] = '{$a} remaining';
 $string['participant'] = 'Participant';
+$string['penalty'] = 'Penalty';
+$string['penaltyapplied'] = '{$a}% penalty applied to final grade)';
+$string['penaltyattempt'] = 'Attempt {$a->attemptno}: {$a->penalty}% penalty';
 $string['pluginadministration'] = 'Assignment administration';
 $string['pluginname'] = 'Assignment';
 $string['preventsubmissionnotingroup'] = 'Require group to make submission';
@@ -392,8 +397,12 @@ $string['quickgrading'] = 'Quick grading';
 $string['quickgradingresult'] = 'Quick grading';
 $string['quickgradingchangessaved'] = 'The grade changes were saved';
 $string['quickgrading_help'] = 'Quick grading allows you to assign grades (and outcomes) directly in the submissions table. Quick grading is not compatible with advanced grading and is not recommended when there are multiple markers.';
+<<<<<<< 4e356760c6be8f4c9ff71215d7e82f93b42d3839
 $string['removeallgroupoverrides'] = 'Delete all group overrides';
 $string['removealluseroverrides'] = 'Delete all user overrides';
+=======
+$string['removepenalty'] = 'Remove';
+>>>>>>> Fixed issues raised by HQ
 $string['reopenuntilpassincompatiblewithblindmarking'] = 'Reopen until pass option is incompatible with blind marking, because the grades are not released to the gradebook until the student identities are revealed.';
 $string['requiresubmissionstatement'] = 'Require that students accept the submission statement';
 $string['requiresubmissionstatement_help'] = 'Require that students accept the submission statement for all submissions to this assignment.';
