@@ -27,7 +27,9 @@ YUI.add('moodle-enrol_manual-quickenrolment', function(Y) {
         ENROLCOUNT : 'enrolCount',
         PERPAGE : 'perPage',
         COHORTSAVAILABLE : 'cohortsAvailable',
-        COHORTCOUNT : 'cohortCount'
+        COHORTCOUNT: 'cohortCount',
+        SUSPENDED: 'hideSuspended',
+        SUSPENDEDDEFAULT: 'hideSuspendedDefault'
     };
     /** CSS classes for nodes in structure **/
     var CSS = {
@@ -68,6 +70,8 @@ YUI.add('moodle-enrol_manual-quickenrolment', function(Y) {
         ACTIVE : 'active',
         SEARCH : 'uep-search',
         SEARCHBTN : 'uep-search-btn',
+        INCLUDESUSPENDED: 'uep-search-suspended',
+        SUSPENDEDTITLE: 'hidesuspendedtitle',
         CLOSE : 'close',
         CLOSEBTN : 'close-button',
         ENTITYSELECTOR : 'uep-entity-selector',
@@ -92,6 +96,17 @@ YUI.add('moodle-enrol_manual-quickenrolment', function(Y) {
                     .append(create('<label class="'+CSS.RECOVERGRADESTITLE+'" for="'+CSS.RECOVERGRADES+'">'+M.util.get_string('recovergrades', 'enrol')+'</label>'))
                     .append(create('<input type="checkbox" class="m-x-1" id="'+CSS.RECOVERGRADES+'" name="'+CSS.RECOVERGRADES+'"'+ this.get(UEP.RECOVERGRADESDEFAULT) +' />'))
             }
+            var hidesuspended = null;
+            hidesuspended = create('<div class="' + CSS.ENROLMENTOPTION + ' ' + CSS.HIDESUSPENDED + '"></div>')
+                .append(
+                    create('<label class="' + CSS.SUSPENDEDTITLE + '" for="' + CSS.HIDESUSPENDED + '">' +
+                        M.util.get_string('hidesuspended', 'enrol_manual') + '</label>')
+                )
+                .append(
+                    create('<input type="checkbox" id="' + CSS.HIDESUSPENDED + '" name="' + CSS.HIDESUSPENDED + '"' +
+                        this.get(UEP.SUSPENDEDDEFAULT) + ' />')
+                )
+            ;
 
             this.set(UEP.BASE, create('<div class="'+CSS.PANEL+' '+CSS.HIDDEN+'"></div>')
                 .append(create('<div class="'+CSS.WRAP+' modal show modal-dialog modal-content"></div>')
@@ -112,6 +127,7 @@ YUI.add('moodle-enrol_manual-quickenrolment', function(Y) {
                                         .append(create('<select class="custom-select"></select>')))
                                     .append(create('<div class="'+CSS.ENROLMENTOPTION+' '+CSS.DURATION+'">'+M.util.get_string('enrolperiod', 'enrol')+'</div>')
                                         .append(create('<select class="custom-select"><option value="0" selected="selected">'+M.util.get_string('unlimitedduration', 'enrol')+'</option></select>')))
+                                    .append(hidesuspended)
                                 )
                             )
                             .append(create('<div class="'+CSS.SEARCH+'"><label for="enrolusersearch" class="accesshide">'+M.util.get_string('usersearch', 'enrol')+'</label></div>')
@@ -133,6 +149,7 @@ YUI.add('moodle-enrol_manual-quickenrolment', function(Y) {
             );
 
             this.set(UEP.SEARCH, this.get(UEP.BASE).one('#enrolusersearch'));
+            this.set(UEP.SUSPENDED, this.get(UEP.BASE).one('#' + CSS.HIDESUSPENDED));
             this.set(UEP.SEARCHBTN, this.get(UEP.BASE).one('#searchbtn'));
             Y.all('.enrol_manual_plugin input').each(function(node){
                 if (node.getAttribute('type', 'submit')) {
@@ -355,6 +372,7 @@ YUI.add('moodle-enrol_manual-quickenrolment', function(Y) {
             params['page'] = this.get(UEP.PAGE);
             params['enrolcount'] = this.get(UEP.ENROLCOUNT);
             params['perpage'] = this.get(UEP.PERPAGE);
+            params['hidesuspended'] = this.get(UEP.BASE).one('#' + CSS.HIDESUSPENDED).get('checked') ? 1 : 0;
 
             if (this.get(UEP.MULTIPLE)) {
                 alert('oh no there are multiple');
@@ -405,15 +423,21 @@ YUI.add('moodle-enrol_manual-quickenrolment', function(Y) {
             for (var i in result.response.users) {
                 count++;
                 var user = result.response.users[i];
-                users.append(create('<div class="'+CSS.USER+' clearfix list-group-item list-group-item-action" rel="'+user.id+'"></div>')
+                CSS.SUSPENDED = user.suspended == "0" ? "" : " suspended";
+                var suspended = user.suspended == "0" ? "" : " (" + M.util.get_string('suspended', 'auth') + ")";
+                users.append(
+                        create('<div class="' + CSS.USER + ' '
+                            + CSS.SUSPENDED +
+                            ' clearfix list-group-item list-group-item-action" rel="' + user.id + '"></div>'
+                        )
                     .addClass((count%2)?CSS.ODD:CSS.EVEN)
-                    .append(create('<div class="'+CSS.COUNT+'">'+count+'</div>'))
-                    .append(create('<div class="'+CSS.PICTURE+'"></div>')
+                    .append(create('<div class="' + CSS.COUNT + '">' + count + '</div>'))
+                    .append(create('<div class="' + CSS.PICTURE + '"></div>')
                         .append(create(user.picture)))
-                    .append(create('<div class="'+CSS.DETAILS+'"></div>')
-                        .append(create('<div class="'+CSS.FULLNAME+'">'+user.fullname+'</div>'))
-                        .append(create('<div class="'+CSS.EXTRAFIELDS+'">'+user.extrafields+'</div>')))
-                    .append(create('<div class="'+CSS.OPTIONS+'"></div>')
+                    .append(create('<div class="' + CSS.DETAILS + '"></div>')
+                        .append(create('<div class="' + CSS.FULLNAME + '">' + user.fullname + suspended + '</div>'))
+                        .append(create('<div class="' + CSS.EXTRAFIELDS + '">' + user.extrafields + '</div>')))
+                    .append(create('<div class="' + CSS.OPTIONS + '"></div>')
                         .append(create('<input type="button" class="'+CSS.ENROL+' btn btn-secondary" value="'+M.util.get_string('enrol', 'enrol')+'" />')))
                 );
             }

@@ -400,6 +400,7 @@ class course_enrolment_manager {
         $extrafields = get_extra_user_fields($this->get_context(), array('username', 'lastaccess'));
         $extrafields[] = 'username';
         $extrafields[] = 'lastaccess';
+        $extrafields[] = 'suspended';
         $ufields = user_picture::fields('u', $extrafields);
 
         return array($ufields, $params, $wherecondition);
@@ -443,13 +444,17 @@ class course_enrolment_manager {
      * @param int $page Defaults to 0
      * @param int $perpage Defaults to 25
      * @param int $addedenrollment Defaults to 0
+     * @param int $hidesuspended Defaults to 0 Includes suspended user accounts.
      * @return array Array(totalusers => int, users => array)
      */
-    public function get_potential_users($enrolid, $search='', $searchanywhere=false, $page=0, $perpage=25, $addedenrollment=0) {
+    public function get_potential_users($enrolid, $search='', $searchanywhere=false, $page=0, $perpage=25,
+        $addedenrollment=0, $hidesuspended = 0) {
         global $DB;
 
         list($ufields, $params, $wherecondition) = $this->get_basic_search_conditions($search, $searchanywhere);
-
+        if ($hidesuspended == 1 ) {
+            $wherecondition .= " AND u.suspended = 0";
+        }
         $fields      = 'SELECT '.$ufields;
         $countfields = 'SELECT COUNT(1)';
         $sql = " FROM {user} u

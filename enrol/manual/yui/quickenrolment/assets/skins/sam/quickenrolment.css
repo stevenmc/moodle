@@ -195,3 +195,8 @@ Structure of the user enroller panel
 .user-enroller-panel .collapsiblearea .uep-enrolment-option {
     margin: 5px 1em;
 }
+
+.user-enroller-panel .suspended {
+    background-color: #e5e5e5;
+    /*color: blac;*/
+}
