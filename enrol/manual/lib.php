@@ -246,6 +246,7 @@ class enrol_manual_plugin extends enrol_plugin {
             'defaultStartDate'    => (int)$defaultstart,
             'disableGradeHistory' => $CFG->disablegradehistory,
             'recoverGradesDefault'=> '',
+            'hideSuspendedDefault' => 0,
             'cohortsAvailable'    => cohort_get_available_cohorts($manager->get_context(), COHORT_WITH_NOTENROLLED_MEMBERS_ONLY, 0, 1) ? true : false
         );
 
@@ -274,9 +275,10 @@ class enrol_manual_plugin extends enrol_plugin {
             'enrolperiod',
             'finishenrollingusers',
             'recovergrades'), 'enrol');
-        $button->strings_for_js(array('browseusers', 'browsecohorts'), 'enrol_manual');
+        $button->strings_for_js(array('browseusers', 'browsecohorts', 'hidesuspended'), 'enrol_manual');
         $button->strings_for_js('assignroles', 'role');
         $button->strings_for_js('startingfrom', 'moodle');
+        $button->strings_for_js('suspended', 'auth');
 
         return $button;
     }
