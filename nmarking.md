@@ -56,8 +56,8 @@ The goal of this project would be to support very common models of assessment wh
 * Moderation  - An assignment is marked by a user and a 2nd assessor reviews the grading and either accepts it as the final grade & feedback or overrides it (either entirely or aspects of it). 
 
 # Links to existing tracker issues, forum discussions, contrib plugins
-* Forum discussion: https://moodle.org/mod/forum/discuss.php?d=347154
-* MDL-49320 https://tracker.moodle.org/browse/MDL-49320
+* Forum discussion: (https://moodle.org/mod/forum/discuss.php?d=347154)[https://moodle.org/mod/forum/discuss.php?d=347154]
+* MDL-49320 (https://tracker.moodle.org/browse/MDL-49320)[https://tracker.moodle.org/browse/MDL-49320]
 
  
 # Requirements
