@@ -909,7 +909,10 @@ class gradingform_rubric_instance extends gradingform_instance {
 
         $allowdecimals = $this->get_controller()->get_allow_grade_decimals();
         $options = $this->get_controller()->get_options();
-
+        
+        $grade = $this->calculate_grade($mingrade, $maxgrade, $curscore, $scores, $allowdecimals, $options['lockzeropoints']);
+        return $grade;
+        /*
         if ($options['lockzeropoints']) {
             // Grade calculation method when 0-level is locked.
             $grade = max($mingrade, $curscore / $scores['maxscore'] * $maxgrade);
@@ -918,9 +921,28 @@ class gradingform_rubric_instance extends gradingform_instance {
             // Alternative grade calculation method.
             $gradeoffset = ($curscore - $scores['minscore']) / ($scores['maxscore'] - $scores['minscore']) * ($maxgrade - $mingrade);
             return ($allowdecimals ? $gradeoffset : round($gradeoffset, 0)) + $mingrade;
+        }*/
+    }
+    /**
+     * Calculates the grade.
+     * 
+     * @param unknown $mingrade
+     * @param unknown $maxgrade
+     * @param unknown $curscore
+     * @param unknown $scores
+     * @param unknown $allowdecimals
+     * @param unknown $lockzeropoints
+     * @return number|unknown|number
+     */
+    function calculate_grade($mingrade, $maxgrade, $curscore, $scores, $allowdecimals = false, $lockzeropoints = false) { 
+        if ($lockzeropoints) {
+            $grade = max($mingrade, $curscore / $scores['maxscore'] * $maxgrade);
+            return $allowdecimals ? $grade : round($grade, 0);
+        } else {
+            $gradeoffset = ($curscore - $scores['minscore']) / ($scores['maxscore'] - $scores['minscore']) * ($maxgrade - $mingrade);
+            return ($allowdecimals ? $gradeoffset : round($gradeoffset, 0)) + $mingrade;
         }
     }
-
     /**
      * Returns html for form element of type 'grading'.
      *
