@@ -64,4 +64,4 @@ The goal of this project would be to support very common models of assessment wh
 To come!
 
 # Further reading
-* Description of marking process on BA Psychology:	bapsychmarking.md
+* Description of marking process on [BA Psychology:](bapsychmarking.md)
