@@ -1,5 +1,5 @@
 # Overview
-A proposal to enhance the existing "allocated marker" and "marking workflow" tools to support 'n' number of markings and a process to moderate markings into a final assignment mark.
+A proposal to enhance the existing "allocated marker" and "marking workflow" tools to support 'n' number of markings and a process to moderate markings into a final assignment mark. This would support the description currently held against markingworkflow: "If enabled, marks will go through a series of workflow stages before being released to students. This allows for *multiple rounds of marking* and allows marks to be released to all students at the same time."
 
 There are assessment cases where it would be desirable for an assignment to be marked by more than one person. At present, the Moodle assignment tool only supports and reports on a single grade.
 
