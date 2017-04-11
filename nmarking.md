@@ -7,11 +7,11 @@ This proposes that the assignment module would support the ability for an arbitr
 
 When configuring an assignment module, a teacher would be able to specify:
 
-1. If the marking takes place sequentially or in parallel
+1. If the marking is allocated or unallocated (i.e. the graders are explicitly allocated to a user or just allocated by the action of grading).
 2. If the marking rounds are independent or not (i.e. markers may or may not see other marker’s grading response)
 3. the number of marking rounds required (1,2,3…n)
 4. the default markers:
-    * in order that they would mark submissions in a sequential mode or just the eligible markers in parallel this may be left blank, if any user with the grade capability can grade in any round
+    * that will be automatically allocated by default mode (this could be changed per-submission) or just the eligible markers in parallel this may be left blank, if any user with the grade capability can grade in any round
     * the reconciliation strategy to be taken in resolving a final grade:
         * Automated: Highest mark, lowest mark, average mark
         * Manual: A user must review all gradings and assert a final grade. 
@@ -24,7 +24,11 @@ If an advanced grading method (such as a rubric) is configured, each marking rou
 
 Once the required number of grading rounds has been completed for a submission, a final result is synthesized by another user (a moderator) or via an automated strategy.
 
-If an advanced grading method is in use or is configured, a manual reconciliation would be performed by the moderator, where all of the grading rounds information is presented to them and they create the final grade response. In the case of advanced grading methods, this may present the grading methods “result” view for each marking round, and a “blank” version for the moderator to record the final verdict. It may be helpful to offer a mechanism that allows the responses from a previous round to be coped in to this version to reduce manual labour.
+If an advanced grading method is in use or is configured, a manual reconciliation would be performed by the moderator, where all of the grading rounds information is presented to them and they create the final grade response. In the case of advanced grading methods, this may present the grading methods “result” view for each marking round, and a “blank” version for the moderator to record the final verdict. It may be helpful to offer a mechanism that allows the responses from a previous round to be copied in to this version to reduce manual labour.
+
+It may feasible for an automated strategy for reconciling the individual grades:
+1. If the grades entered by each grader is within specified bounds, then generate a "final" grade that will be given to the student. This could be the average of the grades given.
+2. if the grades are outwith specified bounds then, either a nominated person (the moderator) could be contacted to perform a manual review / reconcilation (as detailed above).
 
 # Relationship to marking workflow.
 It may be feasible to use the marking workflow to manage this process. When an assignment submission is marked as “Not marked”, the strategy is displayed to users.
@@ -52,7 +56,7 @@ Target users: teachers, administrators
 The goal of this project would be to support very common models of assessment where there are multiple rounds of marking on an assignment prior to the final synthesis of a grade.
 
 # Use cases
-* Double marking – An assignment is marked independently by two assessors (sequentially or in parallel) and the final result is determined as a combination of the 2 grades & feedback.
+* 'n' marking – An assignment is marked independently by 'n' assessors and the final result is determined as a combination of the 2 grades & feedback.
 * Moderation  - An assignment is marked by a user and a 2nd assessor reviews the grading and either accepts it as the final grade & feedback or overrides it (either entirely or aspects of it). 
 
 # Links to existing tracker issues, forum discussions, contrib plugins
