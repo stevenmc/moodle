@@ -232,6 +232,54 @@ function xmldb_assign_upgrade($oldversion) {
 
     // Automatically generated Moodle v3.2.0 release upgrade line.
     // Put any upgrade step following this.
+    if ($oldversion < 2017041100) {
+
+        // Define table assign_allocated_marker to be created.
+        $table = new xmldb_table('assign_allocated_marker');
+
+        // Adding fields to table assign_allocated_marker.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('assignment', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('submission', XMLDB_TYPE_INTEGER, '10', null, null, null, '0');
+        $table->add_field('allocatedmarker', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+        // Adding keys to table assign_allocated_marker.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $table->add_key('userid', XMLDB_KEY_FOREIGN, array('userid'), 'user', array('id'));
+        $table->add_key('assignment', XMLDB_KEY_FOREIGN, array('assignment'), 'assign', array('id'));
+        $table->add_key('submission', XMLDB_KEY_FOREIGN, array('submission'), 'assign_submission', array('id'));
+
+        // Conditionally launch create table for assign_allocated_marker.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Assign savepoint reached.
+        upgrade_mod_savepoint(true, 2017041100, 'assign');
+    }
+
+        if ($oldversion < 2017041101) {
+
+        // Define field final to be added to assign_grades.
+        $table = new xmldb_table('assign_grades');
+        $field = new xmldb_field('final', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0', 'attemptnumber');
+        $index = new xmldb_index('finalgrade', XMLDB_INDEX_NOTUNIQUE, array('assignment', 'userid', 'final'));
+        // Conditionally launch add field final.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Conditionally launch add index finalgrade.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Assign savepoint reached.
+        upgrade_mod_savepoint(true, 2017041101, 'assign');
+    }
+
+
 
     return true;
 }

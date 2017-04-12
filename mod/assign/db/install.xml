@@ -76,6 +76,7 @@
         <FIELD NAME="grader" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="grade" TYPE="number" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" DECIMALS="5" COMMENT="The numerical grade for this assignment submission. Can be determined by scales/advancedgradingforms etc but will always be converted back to a floating point number."/>
         <FIELD NAME="attemptnumber" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The attempt number that this grade relates to"/>
+        <FIELD NAME="final" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Is it a final grade (i.e. not by a grader)"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id" COMMENT="The unique id for this grade."/>
@@ -85,6 +86,7 @@
         <INDEX NAME="userid" UNIQUE="false" FIELDS="userid" COMMENT="The userid for the submission relating to this grade."/>
         <INDEX NAME="attemptnumber" UNIQUE="false" FIELDS="attemptnumber"/>
         <INDEX NAME="uniqueattemptgrade" UNIQUE="true" FIELDS="assignment, userid, attemptnumber" COMMENT="This is a grade for a unique attempt."/>
+        <INDEX NAME="finalgrade" UNIQUE="false" FIELDS="assignment, userid, final" COMMENT="Speed up queries for the latest attempt."/>
       </INDEXES>
     </TABLE>
     <TABLE NAME="assign_plugin_config" COMMENT="Config data for an instance of a plugin in an assignment.">
@@ -137,6 +139,21 @@
       <INDEXES>
         <INDEX NAME="mailed" UNIQUE="false" FIELDS="mailed" COMMENT="Has this user been mailed yet?"/>
       </INDEXES>
+    </TABLE>
+    <TABLE NAME="assign_allocated_marker" COMMENT="Holds details of who is marking a user">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true" />
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The id of the user these flags apply to."/>
+        <FIELD NAME="assignment" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The assignment these flags apply to."/>
+        <FIELD NAME="submission" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="The ID that of the submission that this allocation applies to. Can be null to define this user's default allocated marker override'" />
+        <FIELD NAME="allocatedmarker" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="The allocated marker to this submission"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id" />
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id" COMMENT="id of user table" />
+        <KEY NAME="assignment" TYPE="foreign" FIELDS="assignment" REFTABLE="assign" REFFIELDS="id" COMMENT="The assignment id these flags apply to."/>
+        <KEY NAME="submission" TYPE="foreign" FIELDS="submission" REFTABLE="assign_submission" REFFIELDS="id" COMMENT="The assignment id these flags apply to."/>
+      </KEYS>
     </TABLE>
     <TABLE NAME="assign_overrides" COMMENT="The overrides to assign settings.">
       <FIELDS>

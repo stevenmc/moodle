@@ -44,9 +44,27 @@ class mod_assign_batch_set_allocatedmarker_form extends moodleform {
 
         $mform->addElement('header', 'general', get_string('batchsetallocatedmarker', 'assign', $params['userscount']));
         $mform->addElement('static', 'userslist', get_string('selectedusers', 'assign'), $params['usershtml']);
-
+        
         $options = $params['markers'];
-        $mform->addElement('select', 'allocatedmarker', get_string('allocatedmarker', 'assign'), $options);
+        //$mform->addElement('select', 'allocatedmarker', get_string('allocatedmarker', 'assign'), $options);
+        array_unshift($options, "Unassigned");
+        $markersarray = [];
+
+        $markerstring = "Marker {no}";
+        //get_string('allocatedmarker', 'assign')
+        $markersarray[] = $mform->createElement('select', 'allocatedmarker', $markerstring , $options);
+
+        $repeatno = 2;
+        /*if ($this->_instance){
+            //$repeatno = $DB->count_records('choice_options', array('choiceid'=>$this->_instance));
+            $repeatno += 2;
+        }*/
+        $repeatoptions = [];
+        foreach($options as $marker) {
+            $repeatoption['allocatedmarker']['type'] = PARAM_INT;
+        }
+
+        $this->repeat_elements($markersarray, $repeatno, $repeatoptions, 'assign_allocatedmarkers', 'assign_add_markers', 3, null, true);
 
         $mform->addElement('hidden', 'id');
         $mform->setType('id', PARAM_INT);

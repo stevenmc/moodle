@@ -1260,7 +1260,7 @@ class assign {
         if (empty($update->markingworkflow)) { // If marking workflow is disabled, make sure allocation is disabled.
             $update->markingallocation = 0;
         }
-
+        
         $result = $DB->update_record('assign', $update);
         $this->instance = $DB->get_record('assign', array('id'=>$update->id), '*', MUST_EXIST);
 
@@ -1281,6 +1281,10 @@ class assign {
                 return false;
             }
         }
+        /* MDL-49320 */
+        // Store the default markers
+
+
 
         $this->update_calendar($this->get_course_module()->id);
         $this->update_gradebook(false, $this->get_course_module()->id);
@@ -2432,6 +2436,15 @@ class assign {
             // Set it to the default.
             $grade->attemptnumber = 0;
         }
+
+        // MDL-49320 
+        /*
+         * If the current grader has already graded then we need to do an update.
+         * If the current grader has *not* already graded then we need to an insert
+         * If there is a current grade, but the current grader isn't the same as the 
+         * user who graded the item, then we have to deal with something else.
+         */
+
         $DB->update_record('assign_grades', $grade);
 
         $submission = null;
@@ -3433,9 +3446,11 @@ class assign {
      * @param int $userid The user we are grading
      * @param bool $create If true the grade will be created if it does not exist
      * @param int $attemptnumber The attempt number to retrieve the grade for. -1 means the latest submission.
+     * @param int $grader The id of a specific grader to retrieve
+     * @param bool $final Only get the final (not individual graders) grade.
      * @return stdClass The grade record
      */
-    public function get_user_grade($userid, $create, $attemptnumber=-1) {
+    public function get_user_grade($userid, $create, $attemptnumber=-1, $grader = false, $final = false) {
         global $DB, $USER;
 
         // If the userid is not null then use userid.
@@ -3459,6 +3474,9 @@ class assign {
 
         if ($attemptnumber >= 0) {
             $params['attemptnumber'] = $attemptnumber;
+        }
+        if ($grader !== false) {
+            $params['graderid'] = $grader;
         }
 
         $grades = $DB->get_records('assign_grades', $params, 'attemptnumber DESC', '*', 0, 1);
@@ -6974,7 +6992,7 @@ class assign {
      * @return void
      */
     public function add_grade_form_elements(MoodleQuickForm $mform, stdClass $data, $params) {
-        global $USER, $CFG, $SESSION;
+        global $USER, $CFG, $SESSION, $DB;
         $settings = $this->get_instance();
 
         $rownum = isset($params['rownum']) ? $params['rownum'] : 0;
@@ -7110,11 +7128,11 @@ class assign {
             $mform->addElement('select', 'workflowstate', get_string('markingworkflowstate', 'assign'), $options);
             $mform->addHelpButton('workflowstate', 'markingworkflowstate', 'assign');
         }
-
+        /*
         if ($this->get_instance()->markingworkflow &&
             $this->get_instance()->markingallocation &&
             has_capability('mod/assign:manageallocations', $this->context)) {
-
+                
             list($sort, $params) = users_order_by_sql();
             $markers = get_users_by_capability($this->context, 'mod/assign:grade', '', $sort);
             $markerlist = array('' =>  get_string('choosemarker', 'assign'));
@@ -7128,7 +7146,10 @@ class assign {
             $mform->disabledIf('allocatedmarker', 'workflowstate', 'eq', ASSIGN_MARKING_WORKFLOW_STATE_INREVIEW);
             $mform->disabledIf('allocatedmarker', 'workflowstate', 'eq', ASSIGN_MARKING_WORKFLOW_STATE_READYFORRELEASE);
             $mform->disabledIf('allocatedmarker', 'workflowstate', 'eq', ASSIGN_MARKING_WORKFLOW_STATE_RELEASED);
+
         }
+        */
+        
         $gradestring = '<span class="currentgrade">' . $gradestring . '</span>';
         $mform->addElement('static', 'currentgrade', get_string('currentgrade', 'assign'), $gradestring);
 
@@ -7535,7 +7556,7 @@ class assign {
 
         list($sort, $params) = users_order_by_sql();
         $markers = get_users_by_capability($this->get_context(), 'mod/assign:grade', '', $sort);
-        $markerlist = array();
+        //$markerlist = array("" => "Unassigned");
         foreach ($markers as $marker) {
             $markerlist[$marker->id] = fullname($marker);
         }
@@ -7550,6 +7571,51 @@ class assign {
 
         if ($formdata = $mform->get_data()) {
             $useridlist = explode(',', $formdata->selectedusers);
+            $currentmarkerid = $formdata->allocatedmarker;
+            //$markerids = $DB->get_record('assign_allocated_marker', []);
+            /* MDL-49320 */
+            $markerids = $formdata->allocatedmarker;
+
+            $markers = [];
+            foreach($markerids as $markerid) {
+
+                $marker = $DB->get_record('user', array('id' => $markerid), '*', MUST_EXIST);
+                // Check user is a marker.
+                // pre-generate insert rows
+                $m = new \StdClass();
+                $m->userid = null;
+                $m->assignment = $this->get_instance()->id;
+                $m->allocatedmarker = $marker->id;
+                $markers[$marker->id] = $m;
+            }
+			
+            $tx = $DB->start_delegated_transaction();
+            foreach($useridlist as $userid) {
+                $flags = $this->get_user_flags($userid, true);
+                if ($flags->workflowstate == ASSIGN_MARKING_WORKFLOW_STATE_READYFORREVIEW ||
+                    $flags->workflowstate == ASSIGN_MARKING_WORKFLOW_STATE_INREVIEW ||
+                    $flags->workflowstate == ASSIGN_MARKING_WORKFLOW_STATE_READYFORRELEASE ||
+                    $flags->workflowstate == ASSIGN_MARKING_WORKFLOW_STATE_RELEASED) {
+
+                    continue; // Allocated marker can only be changed in certain workflow states.
+                }
+
+				// Remove old allocated markers
+				$DB->delete_records('assign_allocated_marker', [
+					'userid' => $userid,
+					'assignment' => $this->get_instance()->id
+				]);
+                foreach($markers as $markerid => $marker) {
+                    //var_dump($marker);
+                    $m = clone($marker);
+                    $m->userid = $userid;                
+                    $DB->insert_record('assign_allocated_marker', $m); 
+                }
+            }
+            $tx->allow_commit();
+            /* Original Moodle single allocated marker code */
+            // This could be usedo ed to represent the current marker
+            /*
             $marker = $DB->get_record('user', array('id' => $formdata->allocatedmarker), '*', MUST_EXIST);
 
             foreach ($useridlist as $userid) {
@@ -7569,6 +7635,7 @@ class assign {
                     \mod_assign\event\marker_updated::create_from_marker($this, $user, $marker)->trigger();
                 }
             }
+            */
         }
     }
 
@@ -7666,6 +7733,7 @@ class assign {
                 }
             }
             if (isset($formdata->workflowstate) || isset($formdata->allocatedmarker)) {
+                // Previous
                 $flags = $this->get_user_flags($userid, true);
                 $oldworkflowstate = $flags->workflowstate;
                 $flags->workflowstate = isset($formdata->workflowstate) ? $formdata->workflowstate : $flags->workflowstate;
@@ -8435,6 +8503,27 @@ class assign {
         $completion = new completion_info($this->get_course());
         $completion->set_module_viewed($this->get_course_module());
     }
+
+    /**
+     * Get list of users who can be markers
+     */
+    public function get_markers($only) {
+        // Get markers to use in drop lists.
+        $markingallocationoptions = array();
+        
+        list($sort, $params) = users_order_by_sql();
+        $markers = get_users_by_capability($this->context, 'mod/assign:grade', '', $sort);
+        return $markers;
+        /*
+        //$markingallocationoptions[''] = get_string('filternone', 'assign');
+        //$markingallocationoptions[ASSIGN_MARKER_FILTER_NO_MARKER] = get_string('markerfilternomarker', 'assign');
+        $viewfullnames = has_capability('moodle/site:viewfullnames', $this->context);
+        foreach ($markers as $marker) {
+            $markingallocationoptions[$marker->id] = $marker;// fullname($marker, $viewfullnames);
+        }
+        return $markingallocationoptions;
+        */
+    }
 }
 
 /**
@@ -8708,6 +8797,8 @@ class assign_portfolio_caller extends portfolio_module_caller_base {
     public static function base_supported_formats() {
         return array(PORTFOLIO_FORMAT_FILE, PORTFOLIO_FORMAT_LEAP2A);
     }
+
+    
 }
 
 /**

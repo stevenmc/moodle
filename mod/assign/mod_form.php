@@ -205,6 +205,14 @@ class mod_assign_mod_form extends moodleform_mod {
         $mform->addHelpButton('markingallocation', 'markingallocation', 'assign');
         $mform->disabledIf('markingallocation', 'markingworkflow', 'eq', 0);
 
+        /* MDL-49320 */
+        $opt_gradings = [];
+        for($i = 1; $i < 5; $i++) {
+            $opt_gradings[$i] = $i;
+        }
+        $name = 'Number of gradings required';
+        $mform->addElement('select', 'numgradings', $name, $opt_gradings);
+
         $this->standard_coursemodule_elements();
         $this->apply_admin_defaults();
 
