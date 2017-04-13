@@ -163,7 +163,8 @@ class assign_grading_table extends table_sql implements renderable {
                                AND s.latest = 1
                          LEFT JOIN {assign_grades} g
                                 ON u.id = g.userid
-                               AND g.assignment = :assignmentid2 ';
+                               AND g.assignment = :assignmentid2 
+                               AND a.final = 1';
 
         // For group submissions we don't immediately create an entry in the assign_submission table for each user,
         // instead the userid is set to 0. In this case we use a different query to retrieve the grade for the user.
