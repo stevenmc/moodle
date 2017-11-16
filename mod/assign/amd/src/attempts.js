@@ -72,8 +72,6 @@ define(['jquery', 'core/templates'], function($, templates) {
         var existingPenalties = $(SELECTORS.PENALTYITEMVALUE);
         var cExistingPenalties = $(SELECTORS.PENALTYITEMVALUE).length;
         var penalties = [];
-        window.console.log(existingPenalties);
-        window.console.log("#penalty values: " +cExistingPenalties);
         if (cExistingPenalties == 0 ) {
             
             datafield.val(JSON.stringify(penalties));
@@ -195,7 +193,6 @@ define(['jquery', 'core/templates'], function($, templates) {
                 body.on('change', SELECTORS.MAXATTEMPTS, checkPenaltyState);
 
                 $(SELECTORS.PENALTIES_GRID).on('change', SELECTORS.PENALTYITEMVALUE, function() {
-                    window.console.log("Delegated change event");
                     handleSubmission();
                     checkPenaltyState();
                     }
