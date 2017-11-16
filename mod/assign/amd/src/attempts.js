@@ -31,7 +31,7 @@ define(['jquery', 'core/templates'], function($, templates) {
         var penaltyItemTarget = $(e.target).parent().parent();
         penaltyItemTarget.remove();
         handleSubmission();
-        var cExistingPenalties = $(SELECTORS.PENALTIES_GRID).children().size();
+        var cExistingPenalties = $(SELECTORS.PENALTIES_GRID).children().length();
         if (cExistingPenalties === 0) {
             var newItem = templates.render('mod_assign/nopenaltiesitem');
             newItem.done(function(source) {
@@ -47,7 +47,7 @@ define(['jquery', 'core/templates'], function($, templates) {
         if (!checkPenaltyState()) {
             return;
         }
-        var cExistingPenalties = $(SELECTORS.PENALTYITEM).size();
+        var cExistingPenalties = $(SELECTORS.PENALTYITEM).length;
         var newItemData = {
             penalty: '0'
         };
@@ -71,8 +71,8 @@ define(['jquery', 'core/templates'], function($, templates) {
     var handleSubmission = function() {
         var datafield = $(SELECTORS.FIELD);
         var existingPenalties = $(SELECTORS.PENALTYITEMVALUE);
-        //$(SELECTORS.PENALTIES_GRID).children().size();
-        var cExistingPenalties = $(SELECTORS.PENALTYITEMVALUE).size();
+        //$(SELECTORS.PENALTIES_GRID).children().length;
+        var cExistingPenalties = $(SELECTORS.PENALTYITEMVALUE).length;
         var penalties = [];
         window.console.log(existingPenalties);
         window.console.log("#penalty values: " +cExistingPenalties);
@@ -132,7 +132,7 @@ define(['jquery', 'core/templates'], function($, templates) {
         if (attemptsReopened == 'none') {
             return false;
         }
-        var cExistingPenalties = $(SELECTORS.PENALTYITEM).size();
+        var cExistingPenalties = $(SELECTORS.PENALTYITEM).length;
         var maxAttempts = $(SELECTORS.MAXATTEMPTS + " option:selected").val();
         window.console.log(maxAttempts);
         if (maxAttempts == -1) {
@@ -171,7 +171,7 @@ define(['jquery', 'core/templates'], function($, templates) {
                     catch(x) {
                         me.field.val('');
                     }
-                    var cExistingPenalties = $(SELECTORS.PENALTYITEM).size();
+                    var cExistingPenalties = $(SELECTORS.PENALTYITEM).length;
                     var addPenaltyFunction = function(source) {
                         $(SELECTORS.PENALTIES_GRID).append(
                             source
