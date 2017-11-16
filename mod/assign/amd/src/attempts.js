@@ -71,7 +71,6 @@ define(['jquery', 'core/templates'], function($, templates) {
     var handleSubmission = function() {
         var datafield = $(SELECTORS.FIELD);
         var existingPenalties = $(SELECTORS.PENALTYITEMVALUE);
-        //$(SELECTORS.PENALTIES_GRID).children().length;
         var cExistingPenalties = $(SELECTORS.PENALTYITEMVALUE).length;
         var penalties = [];
         if (cExistingPenalties == 0 ) {
@@ -167,7 +166,7 @@ define(['jquery', 'core/templates'], function($, templates) {
                     catch(x) {
                         me.field.val('');
                     }
-                    var cExistingPenalties = $(SELECTORS.PENALTYITEM).size();
+                    var cExistingPenalties = $(SELECTORS.PENALTYITEM).length;
                     var addPenaltyFunction = function(source) {
                         $(SELECTORS.PENALTIES_GRID).append(
                             source
