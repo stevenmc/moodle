@@ -179,7 +179,7 @@ function xmldb_assign_upgrade($oldversion) {
         }
 
         // Assign savepoint reached.
-        upgrade_mod_savepoint(true, 2016021100, 'assign');
+        upgrade_mod_savepoint(true, 2017111301, 'assign');
     }
     if ($oldversion < 2017111302) {
 

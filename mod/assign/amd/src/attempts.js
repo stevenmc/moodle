@@ -194,10 +194,6 @@ define(['jquery', 'core/templates'], function($, templates) {
                 body.on('change', SELECTORS.MAXATTEMPTS, checkPenaltyState);
 
                 $(SELECTORS.PENALTIES_GRID).on('change', SELECTORS.PENALTYITEMVALUE, function() {
-<<<<<<< HEAD
-=======
-                    window.console.log("Delegated change event");
->>>>>>> Fixed issues raised by HQ
                     handleSubmission();
                     checkPenaltyState();
                     }
