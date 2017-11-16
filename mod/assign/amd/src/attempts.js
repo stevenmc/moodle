@@ -43,7 +43,6 @@ define(['jquery', 'core/templates'], function($, templates) {
     };
 
     var handleAdd = function() {
-        window.console.log("Adding penalty");
         if (!checkPenaltyState()) {
             return;
         }
@@ -74,8 +73,6 @@ define(['jquery', 'core/templates'], function($, templates) {
         //$(SELECTORS.PENALTIES_GRID).children().length;
         var cExistingPenalties = $(SELECTORS.PENALTYITEMVALUE).length;
         var penalties = [];
-        window.console.log(existingPenalties);
-        window.console.log("#penalty values: " +cExistingPenalties);
         if (cExistingPenalties == 0 ) {
             
             datafield.val(JSON.stringify(penalties));
@@ -134,7 +131,6 @@ define(['jquery', 'core/templates'], function($, templates) {
         }
         var cExistingPenalties = $(SELECTORS.PENALTYITEM).length;
         var maxAttempts = $(SELECTORS.MAXATTEMPTS + " option:selected").val();
-        window.console.log(maxAttempts);
         if (maxAttempts == -1) {
             return true;
         } else {
@@ -153,7 +149,6 @@ define(['jquery', 'core/templates'], function($, templates) {
         initialize : function(){
             var body = $('body');
             this.field = $(SELECTORS.FIELD);
-            window.console.log(this.field);
             this.field.hide();
             var mainDivPromise = templates.render('mod_assign/attemptpenalties',[]);
             var me = this;
@@ -199,7 +194,6 @@ define(['jquery', 'core/templates'], function($, templates) {
                 body.on('change', SELECTORS.MAXATTEMPTS, checkPenaltyState);
 
                 $(SELECTORS.PENALTIES_GRID).on('change', SELECTORS.PENALTYITEMVALUE, function() {
-                    window.console.log("Delegated change event");
                     handleSubmission();
                     checkPenaltyState();
                     }
