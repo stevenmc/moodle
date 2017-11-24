@@ -100,6 +100,46 @@ class week_day_exporter extends day_exporter {
     protected function get_other_values(renderer_base $output) {
         $return = parent::get_other_values($output);
 
+<<<<<<< fe71d14f9d462f832d65007428d8b86839f5eded
+=======
+        $url = new moodle_url('/calendar/view.php', [
+                'view' => 'day',
+                'time' => $timestamp,
+            ]);
+
+        if ($this->calendar->course && SITEID !== $this->calendar->course->id) {
+            $url->param('course', $this->calendar->course->id);
+        } else if ($this->calendar->categoryid) {
+            $url->param('category', $this->calendar->categoryid);
+        }
+
+        $return['viewdaylink'] = $url->out(false);
+
+        if ($popovertitle = $this->get_popover_title()) {
+            $return['popovertitle'] = $popovertitle;
+        }
+        $cache = $this->related['cache'];
+        $eventexporters = array_map(function($event) use ($cache, $output, $url) {
+            $context = $cache->get_context($event);
+            $course = $cache->get_course($event);
+            $moduleinstance = $cache->get_module_instance($event);
+            $exporter = new calendar_event_exporter($event, [
+                'context' => $context,
+                'course' => $course,
+                'moduleinstance' => $moduleinstance,
+                'daylink' => $url,
+                'type' => $this->related['type'],
+                'today' => $this->data[0],
+            ]);
+
+            return $exporter;
+        }, $this->related['events']);
+
+        $return['events'] = array_map(function($exporter) use ($output) {
+            return $exporter->export($output);
+        }, $eventexporters);
+
+>>>>>>> MDL-60963 calendar: use related cache for module instances in export
         if ($popovertitle = $this->get_popover_title()) {
             $return['popovertitle'] = $popovertitle;
         }
