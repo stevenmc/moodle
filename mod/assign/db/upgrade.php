@@ -167,6 +167,7 @@ function xmldb_assign_upgrade($oldversion) {
 
     // Automatically generated Moodle v3.4.0 release upgrade line.
     // Put any upgrade step following this.
+
     if ($oldversion < 2017111301) {
 
         // Define field attemptpenalties to be added to assign.
@@ -179,7 +180,9 @@ function xmldb_assign_upgrade($oldversion) {
         }
 
         // Assign savepoint reached.
+
         upgrade_mod_savepoint(true, 2017111301, 'assign');
+
     }
     if ($oldversion < 2017111302) {
 
