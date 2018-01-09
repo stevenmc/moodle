@@ -73,7 +73,6 @@ define(['jquery', 'core/templates'], function($, templates) {
         var cExistingPenalties = $(SELECTORS.PENALTYITEMVALUE).length;
         var penalties = [];
         if (cExistingPenalties == 0 ) {
-            
             datafield.val(JSON.stringify(penalties));
         } else {
             var i = 0;
@@ -95,8 +94,7 @@ define(['jquery', 'core/templates'], function($, templates) {
                         penaltyElement.after("<span class='penaltyerror'>Must be <= 100</span>");
                     }
                 }
-                
-                
+
                 isValid = isValid & penaltyIsValid;
                 if (isValid) {
                     penalties.push(penalty);
