@@ -685,6 +685,7 @@ class assign {
             $update->markingallocation = 0;
         }
 
+
         $returnid = $DB->insert_record('assign', $update);
         $this->instance = $DB->get_record('assign', array('id'=>$returnid), '*', MUST_EXIST);
         // Cache the course record.
@@ -2635,8 +2636,9 @@ class assign {
 
         if (empty($grade->attemptpenalty)) {
             // Set it to the default.
-            $grade->attemptpenalty = 1; // no penalty.
-            exit('err');
+            debugging("No penalty specified", DEBUG_DEVELOPER);
+            $grade->attemptpenalty = 0; // no penalty.
+            //exit('err');
         }
         $DB->update_record('assign_grades', $grade);
 
@@ -5459,7 +5461,8 @@ class assign {
 
         if ($grade->grade >= 0) {
             // Apply Penalty to assign_grade fro storing in gradebook.
-            $gradebookgrade['rawgrade'] = $grade->grade * $grade->attemptpenalty;
+            $penalty = (100 - $grade->attemptpenalty) / 100;
+            $gradebookgrade['rawgrade'] = $grade->grade * $penalty;
         }
         // Allow "no grade" to be chosen.
         if ($grade->grade == -1) {
@@ -7352,16 +7355,21 @@ class assign {
                 }
             }
         }
+
         if (true) {
+
             $penalties = json_decode($settings->attemptpenalties);
             //$mform->addElement("static",'sap', print_r($penalties, true));
             //$mform->addElement('text', 'attemptpenalty', get_string('attemptpenalty', 'assign'));
             //$mform->setType('attemptpenalty', PARAM_RAW);
             //$mform->addHelpButton('attemptpenalty', 'attemptpenalty', 'assign');
             //$mform->setDefault('attemptpenalty', 0);
+            //$mform->addElement('static','hello', print_r($penalties,1));
             // Normally <1 == first attempt, 1= 2nd attempt, 2 = 3rd attempt.
             $submissionattempt = $submission->attemptnumber;
-            
+            //if ($submissionattempt && !empty($grade->attemptpenalty)) {
+                $mform->addElement('static','penaltyapplied',get_string('penaltyapplied', 'assign', $grade->attemptpenalty));
+            //}
             if (!empty($penalties)) {
                 $optpenalties = array(0 => get_string('penaltyattempt', 'assign', $strparams));
                 foreach ($penalties as $index => $p) {
@@ -7370,7 +7378,7 @@ class assign {
 
                     $optpenalties[$p] = get_string('penaltyattempt', 'assign', $strparams);
                 }
-                $mform->addElement('select', 'attemptpenalty', get_string('attemptpenalty', 'assign'), $optpenalties);
+                $mform->addElement('select', 'attemptpenalty', get_string('applyattemptpenalty', 'assign'), $optpenalties);
                 if ($submissionattempt > 0) {
                     $mform->setDefault('attemptpenalty', $penalties[$submissionattempt]);
                     // Need to subtract one as $penalties is only for attempts 2 or later.
@@ -8039,7 +8047,7 @@ class assign {
             $penalties = json_decode($settings->attemptpenalties);
             $penalty = $formdata->attemptpenalty; // As integer.
             if (is_numeric($penalty)) {
-                $penalty = (100 - $penalty) / 100; // Convert to float.
+                //$penalty = (100 - $penalty) / 100; // Convert to float.
                 $grade->attemptpenalty = $penalty;
             }
             $this->update_grade($grade, !empty($formdata->addattempt));
