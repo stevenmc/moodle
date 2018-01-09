@@ -46,7 +46,8 @@ define(['jquery', 'core/templates'], function($, templates) {
         if (!checkPenaltyState()) {
             return;
         }
-        var cExistingPenalties = $(SELECTORS.PENALTYITEM).size();
+        var cExistingPenalties = $(SELECTORS.PENALTYITEM).length;
+
         var newItemData = {
             penalty: '0'
         };
@@ -94,7 +95,6 @@ define(['jquery', 'core/templates'], function($, templates) {
                         penaltyElement.after("<span class='penaltyerror'>Must be <= 100</span>");
                     }
                 }
-
                 isValid = isValid & penaltyIsValid;
                 if (isValid) {
                     penalties.push(penalty);
