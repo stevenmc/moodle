@@ -168,7 +168,6 @@ function xmldb_assign_upgrade($oldversion) {
     // Automatically generated Moodle v3.4.0 release upgrade line.
     // Put any upgrade step following this.
     if ($oldversion < 2017111303) {
-
         // Define field attemptpenalties to be added to assign.
         $table = new xmldb_table('assign');
         $field = new xmldb_field('attemptpenalties', XMLDB_TYPE_TEXT, null, null, null, null, null, 'preventsubmissionnotingroup');
@@ -177,7 +176,6 @@ function xmldb_assign_upgrade($oldversion) {
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
         }
-
         $table = new xmldb_table('assign_grades');
         $field = new xmldb_field('attemptpenalty', XMLDB_TYPE_INTEGER, '3', null, XMLDB_NOTNULL, null, '0', 'attemptnumber');
 
@@ -185,22 +183,32 @@ function xmldb_assign_upgrade($oldversion) {
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
         }
+
         // Assign savepoint reached.
         upgrade_mod_savepoint(true, 2017111303, 'assign');
     }
-    if ($oldversion < 2017111302) {
 
-        // Define field attemptpenalty to be added to assign_grades.
-        $table = new xmldb_table('assign_grades');
-        $field = new xmldb_field('attemptpenalty', XMLDB_TYPE_NUMBER, '3', null, XMLDB_NOTNULL, null, '0', 'attemptnumber');
+    if ($oldversion < 2018012200) {
 
-        // Conditionally launch add field attemptpenalty.
+        // Define field attemptpenalties to be added to assign.
+        $table = new xmldb_table('assign');
+        $field = new xmldb_field('latepenalty', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'attemptpenalties');
+
+        // Conditionally launch add field attemptpenalties.
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
         }
 
+        $table = new xmldb_table('assign_grades');
+        $field = new xmldb_field('latepenalty', XMLDB_TYPE_CHAR, '255', null, null, null, null, 'attemptpenalty');
+        //$field = new xmldb_field('attemptpenalty', XMLDB_TYPE_INTEGER, '3', null, XMLDB_NOTNULL, null, '0', 'attemptnumber');
+
+        // Conditionally launch add field attemptpenalties.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
         // Assign savepoint reached.
-        upgrade_mod_savepoint(true, 2017111302, 'assign');
+        upgrade_mod_savepoint(true, 2018012200, 'assign');
     }
 
     return true;

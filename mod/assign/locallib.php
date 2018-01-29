@@ -77,6 +77,9 @@ define('ASSIGN_EVENT_TYPE_GRADINGDUE', 'gradingdue');
 define('ASSIGN_EVENT_TYPE_OPEN', 'open');
 define('ASSIGN_EVENT_TYPE_CLOSE', 'close');
 
+// Built-in Late Penalties
+define('ASSIGN_LATE_PENALTY_NONE', 'none');
+
 require_once($CFG->libdir . '/accesslib.php');
 require_once($CFG->libdir . '/formslib.php');
 require_once($CFG->dirroot . '/repository/lib.php');
@@ -134,6 +137,9 @@ class assign {
 
     /** @var array list of the installed feedback plugins */
     private $feedbackplugins;
+
+    /** @var array list of the install penalty plugins */
+    private $penaltyplugins;
 
     /** @var string action to be used to return to this page
      *              (without repeating any form submissions etc).
@@ -204,6 +210,8 @@ class assign {
 
         $this->submissionplugins = $this->load_plugins('assignsubmission');
         $this->feedbackplugins = $this->load_plugins('assignfeedback');
+        /* Penalty plugins */
+        $this->penaltyplugins = $this->load_plugins("assignpenalty");
 
         // Extra entropy is required for uniqid() to work on cygwin.
         $this->useridlistid = clean_param(uniqid('', true), PARAM_ALPHANUM);
@@ -675,6 +683,7 @@ class assign {
         } else {
             $update->attemptpenalties = $formdata->attemptpenalties;
         }
+        $update->latepenalty = $formdata->latepenalty;
 
         if (isset($formdata->preventsubmissionnotingroup)) {
             $update->preventsubmissionnotingroup = $formdata->preventsubmissionnotingroup;
@@ -1430,6 +1439,7 @@ class assign {
         } else {
             $update->attemptpenalties = $formdata->attemptpenalties;
         }
+        $update->latepenalty = $formdata->latepenalty;
 
         $result = $DB->update_record('assign', $update);
         $this->instance = $DB->get_record('assign', array('id'=>$update->id), '*', MUST_EXIST);
@@ -1556,6 +1566,25 @@ class assign {
         }
         $group->setElements($feedbackpluginsenabled);
         $mform->setExpanded('submissiontypes');
+
+    }
+    /**
+     * Late Penalties
+     */
+    public function add_penalty_plugin_settings(MoodleQuickForm $mform) {
+        $mform->addElement('header', 'latepenalties', get_string('latepenalty', 'assign'));
+        $penaltypluginsenabled = array();
+        //$group = $mform->addGroup(array(), 'penaltyplugins', get_string('latepenalties', 'assign'), array(' '), false);
+        $penalties = ['' => "None"];
+        //var_dump($this->penaltyplugins);
+        foreach ($this->penaltyplugins as $plugin) {
+            $typestr = $plugin->get_subtype() . '_' . $plugin->get_type();
+            $penalties[$typestr] = $plugin->get_name();
+            $plugin->get_settings($mform);
+        }
+        $mform->addElement('select', 'latepenalty', get_string('latepenalties','assign'), $penalties);
+        //$group->setElements($penaltypluginsenabled);
+        $mform->setExpanded('latepenalties');
     }
 
     /**
@@ -1573,6 +1602,11 @@ class assign {
         }
         foreach ($this->feedbackplugins as $plugin) {
             if ($plugin->is_visible()) {
+                $plugin->data_preprocessing($defaultvalues);
+            }
+        }
+        foreach($this->penaltyplugins as $plugin) {
+            if($plugin->is_visible()) {
                 $plugin->data_preprocessing($defaultvalues);
             }
         }
@@ -5165,10 +5199,11 @@ class assign {
 
         $o = '';
         var_dump($this->instance->attemptpenalties);
+        var_dump($this->instance->latepenalty);
         $teamsubmission = null;
         $submissiongroup = null;
         $notsubmitted = array();
-        if ($instance->teamsubmission) {
+        if ($this->instance->teamsubmission) {
             $teamsubmission = $this->get_group_submission($user->id, 0, false);
             $submissiongroup = $this->get_submission_group($user->id);
             $groupid = 0;
@@ -5405,7 +5440,8 @@ class assign {
         global $CFG, $DB, $USER, $PAGE;
 
         $instance = $this->get_instance();
-
+        //var_dump($this->penaltyplugins);
+        //$lp = $this->penaltyplugins[$this->get_instance()->latepenalty];
         $this->add_grade_notices();
 
         $o = '';
@@ -5462,7 +5498,17 @@ class assign {
         if ($grade->grade >= 0) {
             // Apply Penalty to assign_grade fro storing in gradebook.
             $penalty = (100 - $grade->attemptpenalty) / 100;
-            $gradebookgrade['rawgrade'] = $grade->grade * $penalty;
+            //$gradebookgrade['rawgrade'] = $grade->grade * $penalty;
+            $grade->grade =  $grade->grade * $penalty;
+            // Apply lateness penalty
+            foreach($this->get_instance()->penaltyplugins as $lp) {
+                $s = $lp->get_subtype() .'_'. $lp->get_type();
+                if ($s == $this->get_instance()->latepenalty) {
+                    $grade->grade = $lp->prepare_for_gradebook($grade);
+                    break;
+                }
+            }
+            $gradebookgrade['rawgrade'] = $grade->grade ;
         }
         // Allow "no grade" to be chosen.
         if ($grade->grade == -1) {
@@ -7359,13 +7405,6 @@ class assign {
         if (true) {
 
             $penalties = json_decode($settings->attemptpenalties);
-            //$mform->addElement("static",'sap', print_r($penalties, true));
-            //$mform->addElement('text', 'attemptpenalty', get_string('attemptpenalty', 'assign'));
-            //$mform->setType('attemptpenalty', PARAM_RAW);
-            //$mform->addHelpButton('attemptpenalty', 'attemptpenalty', 'assign');
-            //$mform->setDefault('attemptpenalty', 0);
-            //$mform->addElement('static','hello', print_r($penalties,1));
-            // Normally <1 == first attempt, 1= 2nd attempt, 2 = 3rd attempt.
             $submissionattempt = $submission->attemptnumber;
             //if ($submissionattempt && !empty($grade->attemptpenalty)) {
                 $mform->addElement('static','penaltyapplied',get_string('penaltyapplied', 'assign', $grade->attemptpenalty));
@@ -7375,7 +7414,6 @@ class assign {
                 foreach ($penalties as $index => $p) {
                     $attemptno = $index + 1;
                     $strparams = (object)array('attemptno' => $attemptno, 'penalty' => $p);
-
                     $optpenalties[$p] = get_string('penaltyattempt', 'assign', $strparams);
                 }
                 $mform->addElement('select', 'attemptpenalty', get_string('applyattemptpenalty', 'assign'), $optpenalties);

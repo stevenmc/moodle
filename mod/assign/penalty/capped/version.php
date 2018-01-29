@@ -15,15 +15,15 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Definition of sub-plugins
+ * This file contains the version information for the comments submission plugin
  *
- * @package   mod_assign
- * @copyright 2012 NetSpot {@link http://www.netspot.com.au}
+ * @package    assignpenalty_capped
+ * @copyright 2018 Michael Hughes
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$subplugins = array(
-    'assignsubmission'=>'mod/assign/submission', 
-    'assignfeedback'=>'mod/assign/feedback',
-    'assignpenalty'=>'mod/assign/penalty'
-);
+defined('MOODLE_INTERNAL') || die();
+
+$plugin->version   = 2018012200;
+$plugin->requires  = 2017110800;
+$plugin->component = 'assignpenalty_capped';

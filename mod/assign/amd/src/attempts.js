@@ -41,7 +41,7 @@ define(['jquery', 'core/templates'], function($, templates) {
         }
         checkPenaltyState();
     };
-
+    
     var handleAdd = function() {
         if (!checkPenaltyState()) {
             return;
@@ -70,6 +70,7 @@ define(['jquery', 'core/templates'], function($, templates) {
 
     var handleSubmission = function() {
         var datafield = $(SELECTORS.FIELD);
+
         var existingPenalties = $(SELECTORS.PENALTYITEMVALUE);
         var cExistingPenalties = $(SELECTORS.PENALTYITEMVALUE).length;
         var penalties = [];
@@ -95,7 +96,6 @@ define(['jquery', 'core/templates'], function($, templates) {
                         penaltyElement.after("<span class='penaltyerror'>Must be <= 100</span>");
                     }
                 }
-
                 isValid = isValid & penaltyIsValid;
                 if (isValid) {
                     penalties.push(penalty);

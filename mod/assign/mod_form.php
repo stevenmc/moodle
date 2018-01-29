@@ -107,6 +107,7 @@ class mod_assign_mod_form extends moodleform_mod {
         $assignment->add_all_plugin_settings($mform);
 
         $mform->addElement('header', 'submissionsettings', get_string('submissionsettings', 'assign'));
+        $mform->setExpanded('submissionsettings', true);
         $name = get_string('submissiondrafts', 'assign');
         $mform->addElement('selectyesno', 'submissiondrafts', $name);
         $mform->addHelpButton('submissiondrafts', 'submissiondrafts', 'assign');
@@ -141,6 +142,10 @@ class mod_assign_mod_form extends moodleform_mod {
         );
         $penaltyvalues = json_encode($penaltydata['penalties']);
         $mform->addElement('textarea', 'attemptpenalties', get_string('attemptpenalty', 'assign'));
+
+        /* Lateness penalty */
+        $assignment->add_penalty_plugin_settings($mform);
+
         $mform->addElement('header', 'groupsubmissionsettings', get_string('groupsubmissionsettings', 'assign'));
         $mform->addHelpButton('attemptpenalties', 'attemptpenalty', 'assign');
         $name = get_string('teamsubmission', 'assign');
