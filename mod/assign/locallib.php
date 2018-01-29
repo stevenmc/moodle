@@ -669,6 +669,13 @@ class assign {
         if (!empty($formdata->maxattempts)) {
             $update->maxattempts = $formdata->maxattempts;
         }
+
+        if (empty($formdata->attemptpenalties)) {
+            $update->attemptpenalties = "[]";
+        } else {
+            $update->attemptpenalties = $formdata->attemptpenalties;
+        }
+
         if (isset($formdata->preventsubmissionnotingroup)) {
             $update->preventsubmissionnotingroup = $formdata->preventsubmissionnotingroup;
         }
@@ -677,6 +684,7 @@ class assign {
         if (empty($update->markingworkflow)) { // If marking workflow is disabled, make sure allocation is disabled.
             $update->markingallocation = 0;
         }
+
 
         $returnid = $DB->insert_record('assign', $update);
         $this->instance = $DB->get_record('assign', array('id'=>$returnid), '*', MUST_EXIST);
@@ -1417,6 +1425,11 @@ class assign {
         if (empty($update->markingworkflow)) { // If marking workflow is disabled, make sure allocation is disabled.
             $update->markingallocation = 0;
         }
+        if (empty($formdata->attemptpenalties)) {
+            $update->attemptpenalties = "[]";
+        } else {
+            $update->attemptpenalties = $formdata->attemptpenalties;
+        }
 
         $result = $DB->update_record('assign', $update);
         $this->instance = $DB->get_record('assign', array('id'=>$update->id), '*', MUST_EXIST);
@@ -1745,7 +1758,7 @@ class assign {
      * @param int $modified Timestamp from when the grade was last modified
      * @return string User-friendly representation of grade
      */
-    public function display_grade($grade, $editing, $userid=0, $modified=0) {
+    public function display_grade($grade, $editing, $userid=0, $modified=0, $penaltymultiplier = 1) {
         global $DB;
 
         static $scalegrades = array();
@@ -1781,6 +1794,9 @@ class assign {
                     if ($item->get_displaytype() == GRADE_DISPLAY_TYPE_REAL) {
                         // If displaying the raw grade, also display the total value.
                         $o .= '&nbsp;/&nbsp;' . format_float($this->get_instance()->grade, $item->get_decimals());
+                    }
+                    if ($penaltymultiplier != 1) {
+                        $o .= html_writer::tag('div', get_string('penaltyapplied', 'assign', (1 - $penaltymultiplier) * 10));
                     }
                 }
                 return $o;
@@ -2616,6 +2632,13 @@ class assign {
         if (empty($grade->attemptnumber)) {
             // Set it to the default.
             $grade->attemptnumber = 0;
+        }
+
+        if (empty($grade->attemptpenalty)) {
+            // Set it to the default.
+            debugging("No penalty specified", DEBUG_DEVELOPER);
+            $grade->attemptpenalty = 0; // no penalty.
+            //exit('err');
         }
         $DB->update_record('assign_grades', $grade);
 
@@ -4173,6 +4196,7 @@ class assign {
             $revealidentitiesurl = '/mod/assign/view.php?id=' . $cmid . '&action=revealidentities';
             $links[$revealidentitiesurl] = get_string('revealidentities', 'assign');
         }
+
         foreach ($this->get_feedback_plugins() as $plugin) {
             if ($plugin->is_enabled() && $plugin->is_visible()) {
                 foreach ($plugin->get_grading_actions() as $action => $description) {
@@ -5140,6 +5164,19 @@ class assign {
     public function view_student_summary($user, $showlinks) {
 
         $o = '';
+        var_dump($this->instance->attemptpenalties);
+        $teamsubmission = null;
+        $submissiongroup = null;
+        $notsubmitted = array();
+        if ($instance->teamsubmission) {
+            $teamsubmission = $this->get_group_submission($user->id, 0, false);
+            $submissiongroup = $this->get_submission_group($user->id);
+            $groupid = 0;
+            if ($submissiongroup) {
+                $groupid = $submissiongroup->id;
+            }
+            $notsubmitted = $this->get_submission_group_members_who_have_not_submitted($groupid, false);
+        }
 
         if ($this->can_view_submission($user->id)) {
 
@@ -5421,8 +5458,11 @@ class assign {
      */
     protected function convert_grade_for_gradebook(stdClass $grade) {
         $gradebookgrade = array();
+
         if ($grade->grade >= 0) {
-            $gradebookgrade['rawgrade'] = $grade->grade;
+            // Apply Penalty to assign_grade fro storing in gradebook.
+            $penalty = (100 - $grade->attemptpenalty) / 100;
+            $gradebookgrade['rawgrade'] = $grade->grade * $penalty;
         }
         // Allow "no grade" to be chosen.
         if ($grade->grade == -1) {
@@ -7316,6 +7356,35 @@ class assign {
             }
         }
 
+        if (true) {
+
+            $penalties = json_decode($settings->attemptpenalties);
+            //$mform->addElement("static",'sap', print_r($penalties, true));
+            //$mform->addElement('text', 'attemptpenalty', get_string('attemptpenalty', 'assign'));
+            //$mform->setType('attemptpenalty', PARAM_RAW);
+            //$mform->addHelpButton('attemptpenalty', 'attemptpenalty', 'assign');
+            //$mform->setDefault('attemptpenalty', 0);
+            //$mform->addElement('static','hello', print_r($penalties,1));
+            // Normally <1 == first attempt, 1= 2nd attempt, 2 = 3rd attempt.
+            $submissionattempt = $submission->attemptnumber;
+            //if ($submissionattempt && !empty($grade->attemptpenalty)) {
+                $mform->addElement('static','penaltyapplied',get_string('penaltyapplied', 'assign', $grade->attemptpenalty));
+            //}
+            if (!empty($penalties)) {
+                $optpenalties = array(0 => get_string('penaltyattempt', 'assign', $strparams));
+                foreach ($penalties as $index => $p) {
+                    $attemptno = $index + 1;
+                    $strparams = (object)array('attemptno' => $attemptno, 'penalty' => $p);
+
+                    $optpenalties[$p] = get_string('penaltyattempt', 'assign', $strparams);
+                }
+                $mform->addElement('select', 'attemptpenalty', get_string('applyattemptpenalty', 'assign'), $optpenalties);
+                if ($submissionattempt > 0) {
+                    $mform->setDefault('attemptpenalty', $penalties[$submissionattempt]);
+                    // Need to subtract one as $penalties is only for attempts 2 or later.
+                }
+            }
+        }
         $gradinginfo = grade_get_grades($this->get_course()->id,
                                         'mod',
                                         'assign',
@@ -7449,6 +7518,7 @@ class assign {
                 $mform->addElement('selectyesno', 'addattempt', get_string('addattempt', 'assign'));
                 $mform->setDefault('addattempt', 0);
             }
+
         }
         if (!$gradingpanel) {
             $mform->addElement('selectyesno', 'sendstudentnotifications', get_string('sendstudentnotifications', 'assign'));
@@ -7972,6 +8042,14 @@ class assign {
                 ($originalgrade !== null && $originalgrade != -1) ||
                 ($grade->grade !== null && $grade->grade != -1) ||
                 $feedbackmodified) {
+            // Incorporate attempt penalty.
+            $settings = $this->get_instance();
+            $penalties = json_decode($settings->attemptpenalties);
+            $penalty = $formdata->attemptpenalty; // As integer.
+            if (is_numeric($penalty)) {
+                //$penalty = (100 - $penalty) / 100; // Convert to float.
+                $grade->attemptpenalty = $penalty;
+            }
             $this->update_grade($grade, !empty($formdata->addattempt));
         }
 

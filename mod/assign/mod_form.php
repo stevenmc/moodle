@@ -107,7 +107,6 @@ class mod_assign_mod_form extends moodleform_mod {
         $assignment->add_all_plugin_settings($mform);
 
         $mform->addElement('header', 'submissionsettings', get_string('submissionsettings', 'assign'));
-
         $name = get_string('submissiondrafts', 'assign');
         $mform->addElement('selectyesno', 'submissiondrafts', $name);
         $mform->addHelpButton('submissiondrafts', 'submissiondrafts', 'assign');
@@ -133,8 +132,17 @@ class mod_assign_mod_form extends moodleform_mod {
         $mform->addHelpButton('maxattempts', 'maxattempts', 'assign');
         $mform->disabledIf('maxattempts', 'attemptreopenmethod', 'eq', ASSIGN_ATTEMPT_REOPEN_METHOD_NONE);
 
+        /*
+        Attempt penalty code
+        */
+        $penaltydata = array(
+            'penalties' => array(
+            )
+        );
+        $penaltyvalues = json_encode($penaltydata['penalties']);
+        $mform->addElement('textarea', 'attemptpenalties', get_string('attemptpenalty', 'assign'));
         $mform->addElement('header', 'groupsubmissionsettings', get_string('groupsubmissionsettings', 'assign'));
-
+        $mform->addHelpButton('attemptpenalties', 'attemptpenalty', 'assign');
         $name = get_string('teamsubmission', 'assign');
         $mform->addElement('selectyesno', 'teamsubmission', $name);
         $mform->addHelpButton('teamsubmission', 'teamsubmission', 'assign');
@@ -213,6 +221,11 @@ class mod_assign_mod_form extends moodleform_mod {
         $this->apply_admin_defaults();
 
         $this->add_action_buttons();
+
+        if ($mform->elementExists('attemptpenalties')) {
+            $params = array();
+            $PAGE->requires->js_call_amd('mod_assign/attempts', 'initialize', $params);
+        }
     }
 
     /**
