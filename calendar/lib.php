@@ -1819,6 +1819,13 @@ function calendar_time_representation($time) {
         $timeformat = get_config(null, 'calendar_site_timeformat');
     }
 
+    // Allow language customization of selected time format.
+    if ($timeformat === CALENDAR_TF_12) {
+        $timeformat = get_string('strftimetime12', 'langconfig');
+    } else if ($timeformat === CALENDAR_TF_24) {
+        $timeformat = get_string('strftimetime24', 'langconfig');
+    }
+
     return userdate($time, empty($timeformat) ? $langtimeformat : $timeformat);
 }
 
@@ -3483,6 +3490,7 @@ function calendar_get_view(\calendar_information $calendar, $view, $includenavig
         $month = new \core_calendar\external\month_exporter($calendar, $type, $related);
         $month->set_includenavigation($includenavigation);
         $month->set_initialeventsloaded(!$skipevents);
+        $month->set_showcoursefilter($view == "month");
         $data = $month->export($renderer);
     } else if ($view == "day") {
         $day = new \core_calendar\external\calendar_day_exporter($calendar, $related);

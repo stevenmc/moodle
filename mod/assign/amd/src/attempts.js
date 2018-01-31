@@ -31,7 +31,7 @@ define(['jquery', 'core/templates'], function($, templates) {
         var penaltyItemTarget = $(e.target).parent().parent();
         penaltyItemTarget.remove();
         handleSubmission();
-        var cExistingPenalties = $(SELECTORS.PENALTIES_GRID).children().length();
+        var cExistingPenalties = $(SELECTORS.PENALTIES_GRID).children().length;
         if (cExistingPenalties === 0) {
             var newItem = templates.render('mod_assign/nopenaltiesitem');
             newItem.done(function(source) {
