@@ -37,13 +37,6 @@ global $CFG;
 abstract class provider_testcase extends \advanced_testcase {
 
     /**
-     * Test tearDown.
-     */
-    public function tearDown() {
-        \core_privacy\local\request\writer::reset();
-    }
-
-    /**
      * Export all data for a component for the specified user.
      *
      * @param   int         $userid     The userid of the user to fetch.

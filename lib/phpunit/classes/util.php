@@ -236,6 +236,8 @@ class phpunit_util extends testing_util {
         }
 
         //TODO MDL-25290: add more resets here and probably refactor them to new core function
+        // Reset Provider Content Writer (MDL-62575).
+        \core_privacy\local\request\writer::reset();
 
         // Reset course and module caches.
         if (class_exists('format_base')) {
