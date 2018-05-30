@@ -115,12 +115,17 @@ class provider implements metadataprovider, pluginprovider, preference_provider 
         $collection->add_plugintype_link('assignfeedback', [], 'privacy:metadata:assignfeedbackpluginsummary');
         $collection->add_subsystem_link('core_message', [], 'privacy:metadata:assignmessageexplanation');
 
-        $collection->add_process("Submission of assignments", 'privacy:metadata:process:submission',
+        $collection->add_process("Submission of assignments", 'privacy:metadata:process:submission');
+        $collection->add_process("Grading of student submissioms", 'privacy:metadata:process:grading');
+        $collection->add_process("Granting & management of extensions", 'privacy:metadata:process:extensions');
+
+        /*,
             array_merge(
                 $assigngrades,
                 $assignsubmission,
                 $assignuserflags
             ));
+ */
         return $collection;
     }
 

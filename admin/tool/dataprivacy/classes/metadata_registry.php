@@ -94,6 +94,20 @@ class metadata_registry {
      * @return array The internal data array with the formatted metadata.
      */
     protected function format_metadata($collection, $component, $internaldata) {
+        // Sort to place processes at the top.
+        $ns = "core_privacy\\local\\metadata\\types\\";
+        $order = [$ns.'process',$ns.'database_table',$ns.'user_preference', $ns.'subsystem_link', $ns.'external_location',$ns.'plugintype_link'];
+        usort($collection, function($a, $b) use ($order) {
+            //var_dump(get_class($a));
+            $atype = array_search(get_class($a), $order);
+            $btype = array_search(get_class($b), $order);
+            if ($atype == $btype) {
+                $result = 0;
+            } else {
+                $result = ($atype < $btype) ? -1 : 1;
+            }
+            return $result;
+        });
         foreach ($collection as $collectioninfo) {
             $privacyfields = $collectioninfo->get_privacy_fields();
             $fields = '';
