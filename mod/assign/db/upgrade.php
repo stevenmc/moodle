@@ -167,6 +167,43 @@ function xmldb_assign_upgrade($oldversion) {
 
     // Automatically generated Moodle v3.4.0 release upgrade line.
     // Put any upgrade step following this.
+    if ($oldversion < 2018051401) {
+        // Define field numgradings to be added to assign.
+        $table1 = new xmldb_table('assign');
+        $fielda = new xmldb_field('numgradings', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '1', 'preventsubmissionnotingroup');
+        $fieldb = new xmldb_field('finalgradestrategy', XMLDB_TYPE_CHAR, '100', null, null, null, '', 'numgradings');
 
+        // Conditionally launch add field finalgradestrategy.
+        if (!$dbman->field_exists($table1, $fielda)) {
+            $dbman->add_field($table1, $fielda);
+        }
+        // Conditionally launch add field numgradings.
+        if (!$dbman->field_exists($table1, $fieldb)) {
+            $dbman->add_field($table1, $fieldb);
+        }
+
+        // Define field gradeslot to be added to assign_grades.
+        $table2 = new xmldb_table('assign_grades');
+        $field1 = new xmldb_field('gradeslot', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'attemptnumber');
+        $field2 = new xmldb_field('notes', XMLDB_TYPE_TEXT, null, null, null, null, null, 'gradeslot');
+        $field3= new xmldb_field('finalgrading', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0', 'notes');
+
+        // Conditionally launch add field notes.
+        if (!$dbman->field_exists($table2, $field1)) {
+            $dbman->add_field($table2, $field1);
+        }
+
+        // Conditionally launch add field gradeslot.
+        if (!$dbman->field_exists($table2, $field2)) {
+            $dbman->add_field($table2, $field2);
+        }
+        // Conditionally launch add field finalgrading.
+        if (!$dbman->field_exists($table2, $field3)) {
+            $dbman->add_field($table2, $field3);
+        }
+
+        upgrade_mod_savepoint(true, 2018051401, 'assign');
+
+    }
     return true;
 }

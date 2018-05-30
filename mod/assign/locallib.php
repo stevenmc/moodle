@@ -662,6 +662,8 @@ class assign {
             $update->teamsubmissiongroupingid = $formdata->teamsubmissiongroupingid;
         }
         $update->blindmarking = $formdata->blindmarking;
+        $update->numgradings = $formdata->numgradings;
+        $update->finalgradestrategy = $formdata->finalgradestrategy;
         $update->attemptreopenmethod = ASSIGN_ATTEMPT_REOPEN_METHOD_NONE;
         if (!empty($formdata->attemptreopenmethod)) {
             $update->attemptreopenmethod = $formdata->attemptreopenmethod;
@@ -1402,6 +1404,8 @@ class assign {
             $update->teamsubmissiongroupingid = $formdata->teamsubmissiongroupingid;
         }
         $update->blindmarking = $formdata->blindmarking;
+        $update->numgradings = $formdata->numgradings;
+        $update->finalgradestrategy = $formdata->finalgradestrategy;
         $update->attemptreopenmethod = ASSIGN_ATTEMPT_REOPEN_METHOD_NONE;
         if (!empty($formdata->attemptreopenmethod)) {
             $update->attemptreopenmethod = $formdata->attemptreopenmethod;

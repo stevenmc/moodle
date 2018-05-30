@@ -200,6 +200,16 @@ class mod_assign_mod_form extends moodleform_mod {
             $mform->freeze('blindmarking');
         }
 
+        $mform->addElement('text', 'numgradings', get_string("numberofgradings", 'assign'));
+        $mform->setDefault("numgradings", 1);
+        $finalgradestrategies = [
+            'lastmarker' => get_string('lastmarker', 'assign')
+        ];
+        $mform->addElement('select', 'finalgradestrategy', get_string('finalgradestrategy', 'assign'), $finalgradestrategies);
+        if ($assignment->has_submissions_or_grades() ) {
+            $mform->freeze(['numgradings','finalgradestrategy']);
+        }
+
         $name = get_string('markingworkflow', 'assign');
         $mform->addElement('selectyesno', 'markingworkflow', $name);
         $mform->addHelpButton('markingworkflow', 'markingworkflow', 'assign');
