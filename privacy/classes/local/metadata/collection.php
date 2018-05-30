@@ -206,4 +206,15 @@ class collection {
     public function get_collection() {
         return $this->collection;
     }
+
+    /**
+     * @param $name Name of the data processing
+     * @param string $summary Description of the processing done
+     * @param array $privacyfields Fields used in the process
+     * @return $this
+     */
+    public function add_process($name, $summary = '', $privacyfields = []) {
+        $this->add_type(new types\process($name, $summary, $privacyfields));
+        return $this;
+    }
 }
