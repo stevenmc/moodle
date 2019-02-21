@@ -288,6 +288,7 @@ $string['hidegrader'] = 'Hide grader identity from students';
 $string['hidegrader_help'] = 'Hides the identity of any user who grades an assignment submission, so students can\'t see who marked their work.';
 $string['hideshow'] = 'Hide/Show';
 $string['hiddenuser'] = 'Participant ';
+$string['importoverrides'] = 'Import Overrides';
 $string['inactiveoverridehelp'] = '* Student does not have the correct group or role to attempt the assignment';
 $string['indicator:cognitivedepth'] = 'Assignment cognitive';
 $string['indicator:cognitivedepth_help'] = 'This indicator is based on the cognitive depth reached by the student in an Assignment activity.';

@@ -581,6 +581,14 @@ class assign {
             $this->process_reveal_identities();
             $action = 'redirect';
             $nextpageparams['action'] = 'grading';
+        } else if ($action == 'saveimportoverrides') {
+            if ($this->process_importoverrides($mform)) {
+                $action = 'redirect';
+                $nextpageparams['action'] = '';
+            } else {
+                $action = 'importoverrides';
+            }
+
         }
 
         $returnparams = array('rownum'=>optional_param('rownum', 0, PARAM_INT),
@@ -640,6 +648,8 @@ class assign {
             $o .= $this->view_error_page(get_string('submitforgrading', 'assign'), $notices);
         } else if ($action == 'fixrescalednullgrades') {
             $o .= $this->view_fix_rescaled_null_grades();
+        } else if ($action == 'importoverrides') {
+            $o .= $this->view_import_overrides();
         } else {
             $o .= $this->view_submission_page();
         }
@@ -4293,6 +4303,145 @@ class assign {
         return $o;
     }
 
+    protected function view_import_overrides() {
+        global $CFG;
+        //require_capability('mod/assign:importoverrides', $this->get_context());
+        $o = '';
+        $data = new stdClass();
+        $data->id = $this->get_course_module()->id;
+
+        $formparams = [
+            'instance' => $this->get_instance(),
+            'assign' => $this
+        ];
+
+        $header = new assign_header($this->get_instance(),
+            $this->get_context(),
+                    false,
+            $this->get_course_module()->id
+        );
+
+        require_once($CFG->dirroot .'/mod/assign/importoverrideform.php');
+
+        if(empty($mform)) {
+            $mform = new \mod_assign\local\importoverrideform(null,
+                $this->get_course_module(),
+                $this,
+                $this->get_context()
+            );
+        }
+        $mform->set_data($data);
+
+        $o .= $this->get_renderer()->render($header);
+        $o .= $this->get_renderer()->render(new assign_form('importoverrideform', $mform));
+
+        $o .= $this->view_footer();
+        return $o;
+    }
+
+    protected function process_importoverrides(& $mform) {
+        global $CFG;
+debugging("Processing import overrides");
+        require_once($CFG->dirroot .'/mod/assign/importoverrideform.php');
+        require_sesskey();
+
+        // Why did we pass it in?
+        $mform = new \mod_assign\local\importoverrideform(null,
+            $this->get_course_module(),
+            $this,
+            $this->get_context()
+        );
+        if ($mform->is_cancelled()) {
+            return true;
+        }
+        if ($formdata = $mform->get_data()) {
+            print_r($formdata);
+            make_temp_directory('hello');
+            $mform->get_file_content('userfile');
+            $iid = \csv_import_reader::get_new_iid('mod_assign_importoverrides');
+            $importer = new \csv_import_reader($iid, 'mod_assign_importoverrides');
+            $content = $mform->get_file_content('userfile');
+            print($content);
+            $count = $importer->load_csv_content(
+                $content,
+                $formdata->encoding,
+                $formdata->fielddelimiter
+                );
+
+            $gnamepos = array_search('groupname', $importer->get_columns());
+            $uidpos = array_search('userid', $importer->get_columns());
+            $availablefrompos = array_search('availablefromdate', $importer->get_columns());
+            $cutoffdatepos = array_search('cutoffdate', $importer->get_columns());
+            $duedatepos = array_search('duedate', $importer->get_columns());
+debugging("Groupname pos {$gnamepos}");
+            debugging("Userid pos {$uidpos}");
+            $extensionstocreate = [];
+            if ($count !== false) {
+                debugging("{$count} rows read");
+                // Line one should be a list of fields
+                $errors = [];
+                $rcount = 0;
+                $importer->init();
+                while (($fields = $importer->next()) !== false) {
+
+                    $rcount++;
+                    echo 'Row'. $rcount .'<br />';
+                    $extdef = new stdClass();
+                    $extdef->keyid = null;
+                    $extdef->groupname = null;
+                    $extdef->type = "";
+                    $extdef->availablefrom = null;
+                    $extdef->duedate = null;
+                    $extdef->cutoffdate = null;
+                    if ($gnamepos !== false) {
+                        $groupname = $fields[$gnamepos];
+                        $existinggroupid = groups_get_group_by_name($this->get_course()->id, $groupname);
+                        if ($existinggroupid === false) {
+                            // Need to create a group with this name
+                            $extdef->keyid = null;
+                            $extdef->groupname = $groupname;
+                        } else {
+                            $existinggroup = groups_get_group($existinggroupid);
+                            $extdef->keyid = $existinggroup->id;
+                            $extdef->groupname = $existinggroup->name;
+                        }
+                        $extdef->type = "group";
+                    } else {
+                        debugging("Group not specified");
+                    }
+                    if ($uidpos !== false) {
+                        $userid = $fields[$uidpos];
+                        $extdef->type = "user";
+                    } else {
+                        debugging("Userid not specified");
+                    }
+                    if ($gnamepos === false & $uidpos === false) {
+                        // we have a problem
+                        debugging("Neither group nor user specified");
+                        $extdef->type = null;
+                        $errors[] = "Row {$rcount} specifies both user and group, skipped";
+                        continue;
+                    }
+                    $extdef->availablefrom = $availablefrompos ? $fields[$availablefrompos] : false;
+                    $extdef->duedate = $duedatepos ? $fields[$duedatepos] : false;
+                    $extdef->cutoffdate = $cutoffdatepos ? $fields[$cutoffdatepos] : false;
+
+                    $extensionstocreate[] = $extdef;
+                }
+                print_r($errors);
+                print_r($extensionstocreate);
+
+            } else {
+                print_error($importer->get_error());
+            }
+
+            //$importer->cleanup();
+            $importer->close();
+
+        }
+
+        return false;
+    }
     /**
      * View a link to go back to the previous page. Uses url parameters returnaction and returnparams.
      *
