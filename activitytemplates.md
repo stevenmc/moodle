@@ -1,4 +1,4 @@
-Enhancement to Activity Chooser.
+# Enhancement to Activity Chooser.
 
 Allow administrators to save a module configuration as a starting template to create new activities from.
 
