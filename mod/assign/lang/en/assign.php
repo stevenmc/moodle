@@ -296,7 +296,12 @@ $string['hidegrader_help'] = 'If enabled, the identity of any user who grades an
 Note that this setting has no effect on the comments box on the grading page.';
 $string['hideshow'] = 'Hide/Show';
 $string['hiddenuser'] = 'Participant ';
+$string['importoverrides'] = 'Import Overrides';
+$string['importoverridesgroup'] = 'Import Group Overrides';
+$string['importoverridesuser'] = 'Import User Overrides';
 $string['inactiveoverridehelp'] = '* Student does not have the correct group or role to attempt the assignment';
+$string['importgroupinfo'] = '{$a->groupname}{$a->tocreate}';
+$string['importgroupingroupinginfo'] = '{$a->groupname}{$a->tocreate} ({$a->groupingname})';
 $string['indicator:cognitivedepth'] = 'Assignment cognitive';
 $string['indicator:cognitivedepth_help'] = 'This indicator is based on the cognitive depth reached by the student in an assignment activity.';
 $string['indicator:cognitivedepthdef'] = 'Assignment cognitive';

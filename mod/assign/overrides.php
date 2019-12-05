@@ -159,6 +159,7 @@ $groupurl = new moodle_url('/group/overview.php', array('id' => $cm->course));
 
 $overridedeleteurl = new moodle_url('/mod/assign/overridedelete.php');
 $overrideediturl = new moodle_url('/mod/assign/overrideedit.php');
+$importurl = new moodle_url('/mod/assign/overrideimport.php');
 
 $hasinactive = false; // Whether there are any inactive overrides.
 
@@ -300,6 +301,13 @@ if ($groupmode) {
     echo $OUTPUT->single_button($overrideediturl->out(true,
             array('action' => 'addgroup', 'cmid' => $cm->id)),
             get_string('addnewgroupoverride', 'assign'), 'post', $options);
+
+    echo $OUTPUT->single_button($importurl->out(true,
+        [
+            'action' => 'importgroup', 'cmid' => $cm->id, 'mode' => $mode
+        ]),
+        get_string('importgroupoverride', 'assign'), 'post', $options);
+
 } else {
     $users = array();
     // See if there are any users in the assign.
