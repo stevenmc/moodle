@@ -359,6 +359,34 @@ class assign_submission_file extends assign_submission_plugin {
     }
 
     /**
+     * Display header with information about the expected file submission including the
+     * number of allowed files and file types allowed.
+     *
+     * @return string
+     */
+    public function view_header() {
+        global $OUTPUT;
+        $pluginname = get_string('pluginname', 'assignsubmission_file');
+        $o = '';
+        $config = $this->get_config();
+        $configuredfiletypes = $this->get_configured_typesets();
+
+        $items = [];
+        $maxsubmissions = get_string('expectedsubmissioncount', 'assignsubmission_file', $config->maxfilesubmissions);
+        $items[] = $maxsubmissions;
+        if (!empty($configuredfiletypes)) {
+            $filetypelist = html_writer::alist($configuredfiletypes);
+            $items[] = get_string('expectedfiletypes', 'assignsubmission_file', $filetypelist);
+        } else {
+            $items[] = get_string('expectallfiletypes', 'assignsubmission_file');
+        }
+
+        $o .= $OUTPUT->heading($pluginname, 3);
+        $o .= html_writer::alist($items, null, "ol");
+        return $o;
+    }
+
+    /**
      * Display the list of files  in the submission status table
      *
      * @param stdClass $submission
